@@ -5113,10 +5113,76 @@ pub fn execute_instruction<Mac: Machine>(
                 }
             }
         }
-        insts::OP_VRGATHER_VX => {}
-        insts::OP_VRGATHER_VV => {}
-        insts::OP_VRGATHEREI16_VV => {}
-        insts::OP_VRGATHER_VI => {}
+        insts::OP_VRGATHER_VV => {
+            let i = VVtype(inst);
+            let sew = machine.vsew();
+            for j in 0..machine.vl() as usize {
+                if i.vm() == 0 && machine.get_bit(0, j) {
+                    continue;
+                }
+                let mut data = machine.element_ref(i.vs1(), sew, j).to_vec();
+                data.resize(8, 0);
+                let index = U64::read(&data).u64();
+                if index < machine.vlmax() {
+                    let data = machine.element_ref(i.vs2(), sew, index as usize).to_vec();
+                    machine.element_mut(i.vd(), sew, j).copy_from_slice(&data);
+                } else {
+                    let data = vec![0; sew as usize >> 3];
+                    machine.element_mut(i.vd(), sew, j).copy_from_slice(&data);
+                }
+            }
+        }
+        insts::OP_VRGATHER_VX => {
+            let i = VXtype(inst);
+            let sew = machine.vsew();
+            for j in 0..machine.vl() as usize {
+                if i.vm() == 0 && machine.get_bit(0, j) {
+                    continue;
+                }
+                let index = machine.registers()[i.rs1()].to_u64();
+                if index < machine.vlmax() {
+                    let data = machine.element_ref(i.vs2(), sew, index as usize).to_vec();
+                    machine.element_mut(i.vd(), sew, j).copy_from_slice(&data);
+                } else {
+                    let data = vec![0; sew as usize >> 3];
+                    machine.element_mut(i.vd(), sew, j).copy_from_slice(&data);
+                }
+            }
+        }
+        insts::OP_VRGATHER_VI => {
+            let i = VItype(inst);
+            let sew = machine.vsew();
+            for j in 0..machine.vl() as usize {
+                if i.vm() == 0 && machine.get_bit(0, j) {
+                    continue;
+                }
+                let index = i.immediate_u() as u64;
+                if index < machine.vlmax() {
+                    let data = machine.element_ref(i.vs2(), sew, index as usize).to_vec();
+                    machine.element_mut(i.vd(), sew, j).copy_from_slice(&data);
+                } else {
+                    let data = vec![0; sew as usize >> 3];
+                    machine.element_mut(i.vd(), sew, j).copy_from_slice(&data);
+                }
+            }
+        }
+        insts::OP_VRGATHEREI16_VV => {
+            let i = VVtype(inst);
+            let sew = machine.vsew();
+            for j in 0..machine.vl() as usize {
+                if i.vm() == 0 && machine.get_bit(0, j) {
+                    continue;
+                }
+                let index = U16::read(&machine.element_ref(i.vs1(), 16, j).to_vec()).u64();
+                if index < machine.vlmax() {
+                    let data = machine.element_ref(i.vs2(), sew, index as usize).to_vec();
+                    machine.element_mut(i.vd(), sew, j).copy_from_slice(&data);
+                } else {
+                    let data = vec![0; sew as usize >> 3];
+                    machine.element_mut(i.vd(), sew, j).copy_from_slice(&data);
+                }
+            }
+        }
         insts::OP_VFIRST_M => {
             let i = VVtype(inst);
             let m = if i.vm() == 0 {

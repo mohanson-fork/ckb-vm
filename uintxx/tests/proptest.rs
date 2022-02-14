@@ -34,13 +34,13 @@ proptest! {
         assert_eq!(b0, b1);
     }
 
-    // #[test]
-    // fn test_overflowing_add_u(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
-    //     let (r0, b0) = Eint::overflowing_add_u(E64::from(x), E64::from(y));
-    //     let (r1, b1) = Eint::overflowing_add_u(T64::recv(x), T64::recv(y));
-    //     assert_eq!(r0, r1.into());
-    //     assert_eq!(b0, b1);
-    // }
+    #[test]
+    fn test_overflowing_add_u(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
+        let (r0, b0) = Eint::overflowing_add_u(E64::from(x), E64::from(y));
+        let (r1, b1) = Eint::overflowing_add_u(T64::recv(x), T64::recv(y));
+        assert_eq!(r0, r1.into());
+        assert_eq!(b0, b1);
+    }
 
     #[test]
     fn test_wrapping_add(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {

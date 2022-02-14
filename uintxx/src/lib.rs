@@ -51,6 +51,7 @@ pub trait Eint:
 
     fn is_negative(self) -> bool;
     fn overflowing_add_s(self, other: Self) -> (Self, bool);
+    fn overflowing_add_u(self, other: Self) -> (Self, bool);
     fn wrapping_add(self, other: Self) -> Self;
 
     /// For integer operations, the scalar can be taken from the scalar x register specified by rs1. If XLEN>SEW, the
@@ -119,13 +120,6 @@ pub trait Eint:
 
     /// Compare signed.
     fn cmp_s(&self, other: &Self) -> std::cmp::Ordering;
-
-    /// Calculates self + other
-    ///
-    /// Returns a tuple of the addition along with a boolean indicating whether an arithmetic overflow would
-    /// occur.
-    /// If an overflow would have occurred then the wrapped value is returned.
-    fn overflowing_add(self, other: Self) -> (Self, bool);
 
     /// Calculates self - other
     ///
@@ -260,8 +254,8 @@ pub trait Eint:
 
     /// Calculates self + rhs + carry without the ability to overflow.
     fn carrying_add(self, other: Self, carry: bool) -> (Self, bool) {
-        let (r, carry0) = self.overflowing_add(other);
-        let (r, carry1) = r.overflowing_add(if carry { Self::ONE } else { Self::MIN_U });
+        let (r, carry0) = self.overflowing_add_u(other);
+        let (r, carry1) = r.overflowing_add_u(if carry { Self::ONE } else { Self::MIN_U });
         (r, carry0 | carry1)
     }
 
@@ -288,7 +282,7 @@ pub trait Eint:
 
     /// Widening add.
     fn widening_add(self, other: Self) -> (Self, Self) {
-        let (lo, carry) = self.overflowing_add(other);
+        let (lo, carry) = self.overflowing_add_u(other);
         (lo, if carry { Self::ONE } else { Self::MIN_U })
     }
 
@@ -296,7 +290,7 @@ pub trait Eint:
     fn widening_add_s(self, other: Self) -> (Self, Self) {
         let hi0 = if self.is_negative() { Self::MAX_U } else { Self::MIN_U };
         let hi1 = if other.is_negative() { Self::MAX_U } else { Self::MIN_U };
-        let (lo, carry) = self.overflowing_add(other);
+        let (lo, carry) = self.overflowing_add_u(other);
         let hi = hi0.wrapping_add(hi1).wrapping_add(Self::from(carry));
         (lo, hi)
     }
@@ -592,6 +586,11 @@ macro_rules! construct_eint_wrap {
                 (Self(r as $uint), carry)
             }
 
+            fn overflowing_add_u(self, other: Self) -> (Self, bool) {
+                let (r, carry) = self.0.overflowing_add(other.0);
+                (Self(r), carry)
+            }
+
             fn wrapping_add(self, other: Self) -> Self {
                 Self(self.0.wrapping_add(other.0))
             }
@@ -671,11 +670,6 @@ macro_rules! construct_eint_wrap {
                 (self.0 as $sint).cmp(&(other.0 as $sint))
             }
 
-            fn overflowing_add(self, other: Self) -> (Self, bool) {
-                let (r, b) = self.0.overflowing_add(other.0);
-                (Self(r), b)
-            }
-
             fn overflowing_sub(self, other: Self) -> (Self, bool) {
                 let (r, b) = self.0.overflowing_sub(other.0);
                 (Self(r), b)
@@ -700,7 +694,7 @@ macro_rules! construct_eint_wrap {
             }
 
             fn saturating_add(self, other: Self) -> (Self, bool) {
-                let (r, overflow) = self.overflowing_add(other);
+                let (r, overflow) = self.overflowing_add_u(other);
                 if overflow {
                     (Self::MAX_U, overflow)
                 } else {
@@ -1092,8 +1086,15 @@ macro_rules! construct_eint_twin {
                 }
             }
 
+            fn overflowing_add_u(self, other: Self) -> (Self, bool) {
+                let (lo, lo_carry) = self.0.overflowing_add_u(other.0);
+                let (hi, hi_carry_1) = self.1.overflowing_add_u(<$half>::from(lo_carry));
+                let (hi, hi_carry_2) = hi.overflowing_add_u(other.1);
+                (Self(lo, hi), hi_carry_1 || hi_carry_2)
+            }
+
             fn wrapping_add(self, other: Self) -> Self {
-                let (lo, carry) = self.0.overflowing_add(other.0);
+                let (lo, carry) = self.0.overflowing_add_u(other.0);
                 let hi = self.1.wrapping_add(other.1).wrapping_add(<$half>::from(carry));
                 Self(lo, hi)
             }
@@ -1195,13 +1196,6 @@ macro_rules! construct_eint_twin {
                 }
             }
 
-            fn overflowing_add(self, other: Self) -> (Self, bool) {
-                let (lo, lo_carry) = self.0.overflowing_add(other.0);
-                let (hi, hi_carry_1) = self.1.overflowing_add(<$half>::from(lo_carry));
-                let (hi, hi_carry_2) = hi.overflowing_add(other.1);
-                (Self(lo, hi), hi_carry_1 || hi_carry_2)
-            }
-
             fn overflowing_sub(self, other: Self) -> (Self, bool) {
                 let (lo, lo_borrow) = self.0.overflowing_sub(other.0);
                 let (hi, hi_borrow_1) = self.1.overflowing_sub(<$half>::from(lo_borrow));
@@ -1231,7 +1225,7 @@ macro_rules! construct_eint_twin {
                 };
                 let lo = self.0.widening_mul(other.0);
                 let lo = Self(lo.0, lo.1);
-                let (hi, hi_overflow_add) = lo.1.overflowing_add(hi);
+                let (hi, hi_overflow_add) = lo.1.overflowing_add_u(hi);
                 let lo = Self(lo.0, hi);
                 (lo, hi_overflow_mul || hi_overflow_add)
             }
@@ -1245,7 +1239,7 @@ macro_rules! construct_eint_twin {
             }
 
             fn saturating_add(self, other: Self) -> (Self, bool) {
-                let (r, overflow) = self.overflowing_add(other);
+                let (r, overflow) = self.overflowing_add_u(other);
                 if overflow {
                     (Self::MAX_U, overflow)
                 } else {

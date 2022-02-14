@@ -360,246 +360,8 @@ pub trait Eint:
     }
 }
 
-pub mod alu {
-    use crate::Eint;
 
-    /// Set if equal.
-    pub fn seq<T: Eint>(lhs: T, rhs: T) -> bool {
-        lhs == rhs
-    }
-
-    /// Set if not equal.
-    pub fn sne<T: Eint>(lhs: T, rhs: T) -> bool {
-        lhs != rhs
-    }
-
-    /// Set if less than, unsigned.
-    pub fn sltu<T: Eint>(lhs: T, rhs: T) -> bool {
-        lhs < rhs
-    }
-
-    /// Set if less than, signed.
-    pub fn slt<T: Eint>(lhs: T, rhs: T) -> bool {
-        lhs.cmp_s(&rhs) == std::cmp::Ordering::Less
-    }
-
-    /// Set if less than or equal, unsigned.
-    pub fn sleu<T: Eint>(lhs: T, rhs: T) -> bool {
-        lhs <= rhs
-    }
-
-    /// Set if less than or equal, signed.
-    pub fn sle<T: Eint>(lhs: T, rhs: T) -> bool {
-        lhs.cmp_s(&rhs) != std::cmp::Ordering::Greater
-    }
-
-    /// Set if greater than, unsigned.
-    pub fn sgtu<T: Eint>(lhs: T, rhs: T) -> bool {
-        lhs > rhs
-    }
-
-    /// Set if greater than, signed.
-    pub fn sgt<T: Eint>(lhs: T, rhs: T) -> bool {
-        lhs.cmp_s(&rhs) == std::cmp::Ordering::Greater
-    }
-
-    /// Unsigned maximum.
-    pub fn maxu<T: Eint>(lhs: T, rhs: T) -> T {
-        if lhs > rhs {
-            lhs
-        } else {
-            rhs
-        }
-    }
-
-    /// Signed maximum.
-    pub fn max<T: Eint>(lhs: T, rhs: T) -> T {
-        if lhs.cmp_s(&rhs) == std::cmp::Ordering::Greater {
-            lhs
-        } else {
-            rhs
-        }
-    }
-
-    /// Unsigned minimum.
-    pub fn minu<T: Eint>(lhs: T, rhs: T) -> T {
-        if lhs < rhs {
-            lhs
-        } else {
-            rhs
-        }
-    }
-
-    /// Signed minimum.
-    pub fn min<T: Eint>(lhs: T, rhs: T) -> T {
-        if lhs.cmp_s(&rhs) == std::cmp::Ordering::Less {
-            lhs
-        } else {
-            rhs
-        }
-    }
-
-    /// Bitwise and.
-    pub fn and<T: Eint>(lhs: T, rhs: T) -> T {
-        lhs & rhs
-    }
-
-    /// Bitwise or.
-    pub fn or<T: Eint>(lhs: T, rhs: T) -> T {
-        lhs | rhs
-    }
-
-    /// Bitwise xor.
-    pub fn xor<T: Eint>(lhs: T, rhs: T) -> T {
-        lhs ^ rhs
-    }
-
-    /// Saturating adds of unsigned integers.
-    pub fn saddu<T: Eint>(lhs: T, rhs: T) -> T {
-        let (r, _) = lhs.saturating_add(rhs);
-        r
-    }
-
-    /// Saturating adds of signed integers.
-    pub fn sadd<T: Eint>(lhs: T, rhs: T) -> T {
-        let (r, _) = lhs.saturating_add_s(rhs);
-        r
-    }
-
-    /// Saturating subtract of unsigned integers.
-    pub fn ssubu<T: Eint>(lhs: T, rhs: T) -> T {
-        let (r, _) = lhs.saturating_sub(rhs);
-        r
-    }
-
-    /// Saturating subtract of signed integers.
-    pub fn ssub<T: Eint>(lhs: T, rhs: T) -> T {
-        let (r, _) = lhs.saturating_sub_s(rhs);
-        r
-    }
-
-    /// Copy rhs.
-    pub fn mv<T: Eint>(_: T, rhs: T) -> T {
-        rhs
-    }
-
-    /// Signed multiply, returning high bits of product.
-    pub fn mulh<T: Eint>(lhs: T, rhs: T) -> T {
-        let (_, hi) = lhs.widening_mul_s(rhs);
-        hi
-    }
-
-    /// Unsigned multiply, returning high bits of product.
-    pub fn mulhu<T: Eint>(lhs: T, rhs: T) -> T {
-        let (_, hi) = lhs.widening_mul(rhs);
-        hi
-    }
-
-    /// Signed(vs2)-Unsigned multiply, returning high bits of product.
-    pub fn mulhsu<T: Eint>(lhs: T, rhs: T) -> T {
-        let (_, hi) = lhs.widening_mul_su(rhs);
-        hi
-    }
-
-    /// Get carry out of addition.
-    pub fn madc<T: Eint>(lhs: T, rhs: T) -> bool {
-        let (_, carry) = lhs.overflowing_add_s(rhs);
-        carry
-    }
-
-    /// Get the borrow out of subtraction.
-    pub fn msbc<T: Eint>(lhs: T, rhs: T) -> bool {
-        let (_, borrow) = lhs.overflowing_sub_s(rhs);
-        borrow
-    }
-
-    /// Calculates self + rhs + carry without the ability to overflow.
-    pub fn adc<T: Eint>(lhs: T, rhs: T, carry: bool) -> T {
-        let (r, _) = lhs.carrying_add_s(rhs, carry);
-        r
-    }
-
-    /// Calculates self - rhs - borrow without the ability to overflow.
-    pub fn sbc<T: Eint>(lhs: T, rhs: T, borrow: bool) -> T {
-        let (r, _) = lhs.carrying_sub_s(rhs, borrow);
-        r
-    }
-
-    /// Calculates carry_out(self + rhs + carry) without the ability to overflow.
-    pub fn madcm<T: Eint>(lhs: T, rhs: T, carry: bool) -> bool {
-        let (_, r) = lhs.carrying_add_s(rhs, carry);
-        r
-    }
-
-    /// Calculates borrow_out(self - rhs - borrow) without the ability to overflow.
-    pub fn msbcm<T: Eint>(lhs: T, rhs: T, borrow: bool) -> bool {
-        let (_, r) = lhs.carrying_sub_s(rhs, borrow);
-        r
-    }
-
-    /// Integer multiply-add, overwrite addend
-    pub fn macc<T: Eint>(lhs: T, rhs: T, r: T) -> T {
-        r + (rhs * lhs)
-    }
-
-    /// Integer multiply-sub, overwrite minuend
-    pub fn nmsac<T: Eint>(lhs: T, rhs: T, r: T) -> T {
-        r - (rhs * lhs)
-    }
-
-    /// Integer multiply-add, overwrite multiplicand
-    pub fn madd<T: Eint>(lhs: T, rhs: T, r: T) -> T {
-        lhs + (rhs * r)
-    }
-
-    /// Integer multiply-sub, overwrite multiplicand
-    pub fn nmsub<T: Eint>(lhs: T, rhs: T, r: T) -> T {
-        lhs - (rhs * r)
-    }
-
-    /// Widening unsigned-integer multiply-add, overwrite addend
-    pub fn wmaccu<T: Eint>(lhs: T, rhs: T, r: T) -> (T, T) {
-        let (lo, hi) = lhs.widening_mul(rhs);
-        let (lo, carry) = lo.overflowing_add(r);
-        let hi = hi.wrapping_add(T::from(carry));
-        (lo, hi)
-    }
-
-    /// Widening signed-integer multiply-add, overwrite addend
-    pub fn wmacc<T: Eint>(lhs: T, rhs: T, r: T) -> (T, T) {
-        let (lo, hi) = lhs.widening_mul_s(rhs);
-        let (lo, carry) = lo.overflowing_add(r);
-        let hi = hi.wrapping_add(T::from(carry));
-        (lo, hi)
-    }
-
-    /// Widening signed-unsigned-integer multiply-add, overwrite addend
-    pub fn wmaccsu<T: Eint>(lhs: T, rhs: T, r: T) -> (T, T) {
-        let (lo, hi) = lhs.widening_mul_su(rhs);
-        let (lo, carry) = lo.overflowing_add(r);
-        let hi = hi.wrapping_add(T::from(carry));
-        (lo, hi)
-    }
-
-    /// Widening unsigned-signed-integer multiply-add, overwrite addend
-    pub fn wmaccus<T: Eint>(lhs: T, rhs: T, r: T) -> (T, T) {
-        let (lo, hi) = rhs.widening_mul_su(lhs);
-        let (lo, carry) = lo.overflowing_add(r);
-        let hi = hi.wrapping_add(T::from(carry));
-        (lo, hi)
-    }
-
-    /// The vector integer merge instructions combine two source operands based on a mask
-    pub fn merge<T: Eint>(lhs: T, rhs: T, mask: bool) -> T {
-        if mask {
-            rhs
-        } else {
-            lhs
-        }
-    }
-}
-
-macro_rules! uint_wrap_impl {
+macro_rules! construct_eint_wrap {
     ($name:ident, $uint:ty, $sint:ty) => {
         #[derive(Copy, Clone, Default, PartialEq, Eq)]
         pub struct $name(pub $uint);
@@ -1067,11 +829,11 @@ macro_rules! uint_wrap_from_impl {
     };
 }
 
-uint_wrap_impl!(U8, u8, i8);
-uint_wrap_impl!(U16, u16, i16);
-uint_wrap_impl!(U32, u32, i32);
-uint_wrap_impl!(U64, u64, i64);
-uint_wrap_impl!(U128, u128, i128);
+construct_eint_wrap!(U8, u8, i8);
+construct_eint_wrap!(U16, u16, i16);
+construct_eint_wrap!(U32, u32, i32);
+construct_eint_wrap!(U64, u64, i64);
+construct_eint_wrap!(U128, u128, i128);
 uint_wrap_from_impl!(U8, u8, u8);
 uint_wrap_from_impl!(U8, u8, i8);
 uint_wrap_from_impl!(U16, u16, u8);
@@ -1828,7 +1590,11 @@ macro_rules! uint_impl_from_i {
     };
 }
 
-uint_impl!(U256, U128);
+construct_eint_twin!(U256, U128);
+construct_eint_twin!(U512, U256);
+construct_eint_twin!(U1024, U512);
+construct_eint_twin!(U2048, U1024);
+
 uint_impl_from_u!(U256, U128, bool);
 uint_impl_from_u!(U256, U128, u8);
 uint_impl_from_u!(U256, U128, u16);
@@ -1841,7 +1607,6 @@ uint_impl_from_i!(U256, U128, i16);
 uint_impl_from_i!(U256, U128, i32);
 uint_impl_from_i!(U256, U128, i64);
 uint_impl_from_i!(U256, U128, i128);
-uint_impl!(U512, U256);
 uint_impl_from_u!(U512, U256, bool);
 uint_impl_from_u!(U512, U256, u8);
 uint_impl_from_u!(U512, U256, u16);
@@ -1855,7 +1620,6 @@ uint_impl_from_i!(U512, U256, i16);
 uint_impl_from_i!(U512, U256, i32);
 uint_impl_from_i!(U512, U256, i64);
 uint_impl_from_i!(U512, U256, i128);
-uint_impl!(U1024, U512);
 uint_impl_from_u!(U1024, U512, bool);
 uint_impl_from_u!(U1024, U512, u8);
 uint_impl_from_u!(U1024, U512, u16);
@@ -1870,7 +1634,6 @@ uint_impl_from_i!(U1024, U512, i16);
 uint_impl_from_i!(U1024, U512, i32);
 uint_impl_from_i!(U1024, U512, i64);
 uint_impl_from_i!(U1024, U512, i128);
-uint_impl!(U2048, U1024);
 uint_impl_from_u!(U2048, U1024, bool);
 uint_impl_from_u!(U2048, U1024, u8);
 uint_impl_from_u!(U2048, U1024, u16);
@@ -1886,3 +1649,5 @@ uint_impl_from_i!(U2048, U1024, i16);
 uint_impl_from_i!(U2048, U1024, i32);
 uint_impl_from_i!(U2048, U1024, i64);
 uint_impl_from_i!(U2048, U1024, i128);
+
+pub mod alu;

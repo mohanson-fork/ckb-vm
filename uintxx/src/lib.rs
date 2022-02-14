@@ -4,6 +4,16 @@ pub trait Eint:
     + Default
     + Eq
     + From<bool>
+    + From<i8>
+    + From<i16>
+    + From<i32>
+    + From<i64>
+    + From<i128>
+    + From<u8>
+    + From<u16>
+    + From<u32>
+    + From<u64>
+    + From<u128>
     + PartialEq
     + std::fmt::Debug
     + std::fmt::Display
@@ -856,6 +866,34 @@ uint_wrap_from_impl!(E128, E32);
 uint_wrap_from_impl!(E128, E64);
 
 #[macro_export]
+macro_rules! construct_eint_twin_from_uint {
+    ($name:ident, $half:ty, $from:ty) => {
+        impl std::convert::From<$from> for $name {
+            fn from(small: $from) -> Self {
+                Self {
+                    lo: <$half>::from(small),
+                    hi: <$half>::MIN,
+                }
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! construct_eint_twin_from_sint {
+    ($name:ident, $half:ty, $from:ty) => {
+        impl std::convert::From<$from> for $name {
+            fn from(small: $from) -> Self {
+                Self {
+                    lo: <$half>::from(small),
+                    hi: if small >= 0 { <$half>::MIN } else { <$half>::MAX },
+                }
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! construct_eint_twin {
     ($name:ident, $half:ty) => {
         #[derive(Copy, Clone, Default, PartialEq, Eq)]
@@ -881,6 +919,18 @@ macro_rules! construct_eint_twin {
                 write!(f, "{:x}{:x}", self.hi, self.lo)
             }
         }
+
+        construct_eint_twin_from_uint!($name, $half, bool);
+        construct_eint_twin_from_sint!($name, $half, i8);
+        construct_eint_twin_from_sint!($name, $half, i16);
+        construct_eint_twin_from_sint!($name, $half, i32);
+        construct_eint_twin_from_sint!($name, $half, i64);
+        construct_eint_twin_from_sint!($name, $half, i128);
+        construct_eint_twin_from_uint!($name, $half, u8);
+        construct_eint_twin_from_uint!($name, $half, u16);
+        construct_eint_twin_from_uint!($name, $half, u32);
+        construct_eint_twin_from_uint!($name, $half, u64);
+        construct_eint_twin_from_uint!($name, $half, u128);
 
         impl std::ops::BitAnd for $name {
             type Output = Self;
@@ -1558,76 +1608,19 @@ macro_rules! uint_impl_from_u {
     };
 }
 
-macro_rules! uint_impl_from_i {
-    ($name:ident, $half:ty, $from:ty) => {
-        impl std::convert::From<$from> for $name {
-            fn from(small: $from) -> Self {
-                Self {
-                    lo: <$half>::from(small),
-                    hi: if small >= 0 { <$half>::MIN } else { <$half>::MAX },
-                }
-            }
-        }
-    };
-}
-
 construct_eint_twin!(E256, E128);
 construct_eint_twin!(E512, E256);
 construct_eint_twin!(E1024, E512);
 construct_eint_twin!(E2048, E1024);
-uint_impl_from_u!(E256, E128, bool);
-uint_impl_from_u!(E256, E128, u8);
-uint_impl_from_u!(E256, E128, u16);
-uint_impl_from_u!(E256, E128, u32);
-uint_impl_from_u!(E256, E128, u64);
-uint_impl_from_u!(E256, E128, u128);
 uint_impl_from_u!(E256, E128);
-uint_impl_from_i!(E256, E128, i8);
-uint_impl_from_i!(E256, E128, i16);
-uint_impl_from_i!(E256, E128, i32);
-uint_impl_from_i!(E256, E128, i64);
-uint_impl_from_i!(E256, E128, i128);
-uint_impl_from_u!(E512, E256, bool);
-uint_impl_from_u!(E512, E256, u8);
-uint_impl_from_u!(E512, E256, u16);
-uint_impl_from_u!(E512, E256, u32);
-uint_impl_from_u!(E512, E256, u64);
-uint_impl_from_u!(E512, E256, u128);
 uint_impl_from_u!(E512, E256, E128);
 uint_impl_from_u!(E512, E256);
-uint_impl_from_i!(E512, E256, i8);
-uint_impl_from_i!(E512, E256, i16);
-uint_impl_from_i!(E512, E256, i32);
-uint_impl_from_i!(E512, E256, i64);
-uint_impl_from_i!(E512, E256, i128);
-uint_impl_from_u!(E1024, E512, bool);
-uint_impl_from_u!(E1024, E512, u8);
-uint_impl_from_u!(E1024, E512, u16);
-uint_impl_from_u!(E1024, E512, u32);
-uint_impl_from_u!(E1024, E512, u64);
-uint_impl_from_u!(E1024, E512, u128);
 uint_impl_from_u!(E1024, E512, E128);
 uint_impl_from_u!(E1024, E512, E256);
 uint_impl_from_u!(E1024, E512);
-uint_impl_from_i!(E1024, E512, i8);
-uint_impl_from_i!(E1024, E512, i16);
-uint_impl_from_i!(E1024, E512, i32);
-uint_impl_from_i!(E1024, E512, i64);
-uint_impl_from_i!(E1024, E512, i128);
-uint_impl_from_u!(E2048, E1024, bool);
-uint_impl_from_u!(E2048, E1024, u8);
-uint_impl_from_u!(E2048, E1024, u16);
-uint_impl_from_u!(E2048, E1024, u32);
-uint_impl_from_u!(E2048, E1024, u64);
-uint_impl_from_u!(E2048, E1024, u128);
 uint_impl_from_u!(E2048, E1024, E128);
 uint_impl_from_u!(E2048, E1024, E256);
 uint_impl_from_u!(E2048, E1024, E512);
 uint_impl_from_u!(E2048, E1024);
-uint_impl_from_i!(E2048, E1024, i8);
-uint_impl_from_i!(E2048, E1024, i16);
-uint_impl_from_i!(E2048, E1024, i32);
-uint_impl_from_i!(E2048, E1024, i64);
-uint_impl_from_i!(E2048, E1024, i128);
 
 pub mod alu;

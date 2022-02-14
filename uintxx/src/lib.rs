@@ -858,10 +858,7 @@ macro_rules! construct_eint_twin_from_uint {
     ($name:ident, $half:ty, $from:ty) => {
         impl std::convert::From<$from> for $name {
             fn from(small: $from) -> Self {
-                Self {
-                    lo: <$half>::from(small),
-                    hi: <$half>::MIN_U,
-                }
+                Self(<$half>::from(small), <$half>::MIN_U)
             }
         }
     };
@@ -872,14 +869,14 @@ macro_rules! construct_eint_twin_from_sint {
     ($name:ident, $half:ty, $from:ty) => {
         impl std::convert::From<$from> for $name {
             fn from(small: $from) -> Self {
-                Self {
-                    lo: <$half>::from(small),
-                    hi: if small >= 0 {
+                Self(
+                    <$half>::from(small),
+                    if small >= 0 {
                         <$half>::MIN_U
                     } else {
                         <$half>::MAX_U
                     },
-                }
+                )
             }
         }
     };
@@ -889,26 +886,23 @@ macro_rules! construct_eint_twin_from_sint {
 macro_rules! construct_eint_twin {
     ($name:ident, $half:ty) => {
         #[derive(Copy, Clone, Default, PartialEq, Eq)]
-        pub struct $name {
-            pub lo: $half,
-            pub hi: $half,
-        }
+        pub struct $name(pub $half, pub $half);
 
         impl std::fmt::Debug for $name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                write!(f, "{:x}{:x}", self.hi, self.lo)
+                write!(f, "{:x}{:x}", self.1, self.0)
             }
         }
 
         impl std::fmt::Display for $name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                write!(f, "{:x}{:x}", self.hi, self.lo)
+                write!(f, "{:x}{:x}", self.1, self.0)
             }
         }
 
         impl std::fmt::LowerHex for $name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                write!(f, "{:x}{:x}", self.hi, self.lo)
+                write!(f, "{:x}{:x}", self.1, self.0)
             }
         }
 
@@ -927,61 +921,49 @@ macro_rules! construct_eint_twin {
         impl std::ops::BitAnd for $name {
             type Output = Self;
             fn bitand(self, other: Self) -> Self::Output {
-                Self {
-                    lo: self.lo & other.lo,
-                    hi: self.hi & other.hi,
-                }
+                Self(self.0 & other.0, self.1 & other.1)
             }
         }
 
         impl std::ops::BitAndAssign for $name {
             fn bitand_assign(&mut self, other: Self) {
-                self.lo &= other.lo;
-                self.hi &= other.hi;
+                self.0 &= other.0;
+                self.1 &= other.1;
             }
         }
 
         impl std::ops::BitOr for $name {
             type Output = Self;
             fn bitor(self, other: Self) -> Self::Output {
-                Self {
-                    lo: self.lo | other.lo,
-                    hi: self.hi | other.hi,
-                }
+                Self(self.0 | other.0, self.1 | other.1)
             }
         }
 
         impl std::ops::BitOrAssign for $name {
             fn bitor_assign(&mut self, other: Self) {
-                self.lo |= other.lo;
-                self.hi |= other.hi;
+                self.0 |= other.0;
+                self.1 |= other.1;
             }
         }
 
         impl std::ops::BitXor for $name {
             type Output = Self;
             fn bitxor(self, other: Self) -> Self::Output {
-                Self {
-                    lo: self.lo ^ other.lo,
-                    hi: self.hi ^ other.hi,
-                }
+                Self(self.0 ^ other.0, self.1 ^ other.1)
             }
         }
 
         impl std::ops::BitXorAssign for $name {
             fn bitxor_assign(&mut self, other: Self) {
-                self.lo ^= other.lo;
-                self.hi ^= other.hi;
+                self.0 ^= other.0;
+                self.1 ^= other.1;
             }
         }
 
         impl std::ops::Not for $name {
             type Output = Self;
             fn not(self) -> Self::Output {
-                Self {
-                    lo: !self.lo,
-                    hi: !self.hi,
-                }
+                Self(!self.0, !self.1)
             }
         }
 
@@ -1000,11 +982,11 @@ macro_rules! construct_eint_twin {
 
         impl std::cmp::Ord for $name {
             fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-                let hi_cmp = self.hi.cmp(&other.hi);
+                let hi_cmp = self.1.cmp(&other.1);
                 if hi_cmp != std::cmp::Ordering::Equal {
                     hi_cmp
                 } else {
-                    self.lo.cmp(&other.lo)
+                    self.0.cmp(&other.0)
                 }
             }
         }
@@ -1090,30 +1072,12 @@ macro_rules! construct_eint_twin {
 
         impl Eint for $name {
             const BITS: u32 = <$half>::BITS * 2;
-            const MAX_S: Self = Self {
-                lo: <$half>::MAX_U,
-                hi: <$half>::MAX_S,
-            };
-            const MAX_U: Self = Self {
-                lo: <$half>::MAX_U,
-                hi: <$half>::MAX_U,
-            };
-            const MIN_S: Self = Self {
-                lo: <$half>::MIN_U,
-                hi: <$half>::MIN_S,
-            };
-            const MIN_U: Self = Self {
-                lo: <$half>::MIN_U,
-                hi: <$half>::MIN_U,
-            };
-            const ONE: Self = Self {
-                lo: <$half>::ONE,
-                hi: <$half>::MIN_U,
-            };
-            const ZERO: Self = Self {
-                lo: <$half>::MIN_U,
-                hi: <$half>::MIN_U,
-            };
+            const MAX_S: Self = Self(<$half>::MAX_U, <$half>::MAX_S);
+            const MAX_U: Self = Self(<$half>::MAX_U, <$half>::MAX_U);
+            const MIN_S: Self = Self(<$half>::MIN_U, <$half>::MIN_S);
+            const MIN_U: Self = Self(<$half>::MIN_U, <$half>::MIN_U);
+            const ONE: Self = Self(<$half>::ONE, <$half>::MIN_U);
+            const ZERO: Self = Self(<$half>::MIN_U, <$half>::MIN_U);
 
             fn is_negative(self) -> bool {
                 self != <$name>::MIN_U && self.wrapping_shr(Self::BITS - 1) == <$name>::ONE
@@ -1129,9 +1093,9 @@ macro_rules! construct_eint_twin {
             }
 
             fn wrapping_add(self, other: Self) -> Self {
-                let (lo, carry) = self.lo.overflowing_add(other.lo);
-                let hi = self.hi.wrapping_add(other.hi).wrapping_add(<$half>::from(carry));
-                Self { lo, hi }
+                let (lo, carry) = self.0.overflowing_add(other.0);
+                let hi = self.1.wrapping_add(other.1).wrapping_add(<$half>::from(carry));
+                Self(lo, hi)
             }
 
             fn vx_s(x: u64) -> Self {
@@ -1154,27 +1118,27 @@ macro_rules! construct_eint_twin {
             }
 
             fn u8(self) -> u8 {
-                self.lo.u8()
+                self.0.u8()
             }
 
             fn u16(self) -> u16 {
-                self.lo.u16()
+                self.0.u16()
             }
 
             fn u32(self) -> u32 {
-                self.lo.u32()
+                self.0.u32()
             }
 
             fn u64(self) -> u64 {
-                self.lo.u64()
+                self.0.u64()
             }
 
             fn lo_zext(self) -> Self {
-                Self::from(self.lo)
+                Self::from(self.0)
             }
 
             fn hi_zext(self) -> Self {
-                Self::from(self.hi)
+                Self::from(self.1)
             }
 
             fn is_positive(self) -> bool {
@@ -1184,40 +1148,40 @@ macro_rules! construct_eint_twin {
             fn read(b: &[u8]) -> Self {
                 let mut buf = [0u8; Self::BITS as usize >> 3];
                 buf.copy_from_slice(&b);
-                Self {
-                    lo: <$half>::read(&b[0..Self::BITS as usize >> 4]),
-                    hi: <$half>::read(&b[Self::BITS as usize >> 4..Self::BITS as usize >> 3]),
-                }
+                Self(
+                    <$half>::read(&b[0..Self::BITS as usize >> 4]),
+                    <$half>::read(&b[Self::BITS as usize >> 4..Self::BITS as usize >> 3]),
+                )
             }
 
             fn save(&self, b: &mut [u8]) {
-                self.lo.save(&mut b[0..Self::BITS as usize >> 4]);
-                self.hi
+                self.0.save(&mut b[0..Self::BITS as usize >> 4]);
+                self.1
                     .save(&mut b[Self::BITS as usize >> 4..Self::BITS as usize >> 3]);
             }
 
             fn save_lo(&self, b: &mut [u8]) {
-                self.lo.save(b);
+                self.0.save(b);
             }
 
             fn leading_zeros(self) -> u32 {
-                if self.hi == <$half>::MIN_U {
-                    Self::BITS / 2 + self.lo.leading_zeros()
+                if self.1 == <$half>::MIN_U {
+                    Self::BITS / 2 + self.0.leading_zeros()
                 } else {
-                    self.hi.leading_zeros()
+                    self.1.leading_zeros()
                 }
             }
 
             fn trailing_zeros(self) -> u32 {
-                if self.lo == <$half>::MIN_U {
-                    Self::BITS / 2 + self.hi.trailing_zeros()
+                if self.0 == <$half>::MIN_U {
+                    Self::BITS / 2 + self.1.trailing_zeros()
                 } else {
-                    self.lo.trailing_zeros()
+                    self.0.trailing_zeros()
                 }
             }
 
             fn count_ones(self) -> u32 {
-                self.lo.count_ones() + self.hi.count_ones()
+                self.0.count_ones() + self.1.count_ones()
             }
 
             fn cmp_s(&self, other: &Self) -> std::cmp::Ordering {
@@ -1232,17 +1196,17 @@ macro_rules! construct_eint_twin {
             }
 
             fn overflowing_add(self, other: Self) -> (Self, bool) {
-                let (lo, lo_carry) = self.lo.overflowing_add(other.lo);
-                let (hi, hi_carry_1) = self.hi.overflowing_add(<$half>::from(lo_carry));
-                let (hi, hi_carry_2) = hi.overflowing_add(other.hi);
-                (Self { lo, hi }, hi_carry_1 || hi_carry_2)
+                let (lo, lo_carry) = self.0.overflowing_add(other.0);
+                let (hi, hi_carry_1) = self.1.overflowing_add(<$half>::from(lo_carry));
+                let (hi, hi_carry_2) = hi.overflowing_add(other.1);
+                (Self(lo, hi), hi_carry_1 || hi_carry_2)
             }
 
             fn overflowing_sub(self, other: Self) -> (Self, bool) {
-                let (lo, lo_borrow) = self.lo.overflowing_sub(other.lo);
-                let (hi, hi_borrow_1) = self.hi.overflowing_sub(<$half>::from(lo_borrow));
-                let (hi, hi_borrow_2) = hi.overflowing_sub(other.hi);
-                (Self { lo, hi }, hi_borrow_1 || hi_borrow_2)
+                let (lo, lo_borrow) = self.0.overflowing_sub(other.0);
+                let (hi, hi_borrow_1) = self.1.overflowing_sub(<$half>::from(lo_borrow));
+                let (hi, hi_borrow_2) = hi.overflowing_sub(other.1);
+                (Self(lo, hi), hi_borrow_1 || hi_borrow_2)
             }
 
             fn overflowing_sub_s(self, other: Self) -> (Self, bool) {
@@ -1255,20 +1219,20 @@ macro_rules! construct_eint_twin {
             }
 
             fn overflowing_mul(self, other: Self) -> (Self, bool) {
-                let (hi, hi_overflow_mul) = match (self.hi, other.hi) {
-                    (_, <$half>::MIN_U) => self.hi.overflowing_mul(other.lo),
-                    (<$half>::MIN_U, _) => other.hi.overflowing_mul(self.lo),
+                let (hi, hi_overflow_mul) = match (self.1, other.1) {
+                    (_, <$half>::MIN_U) => self.1.overflowing_mul(other.0),
+                    (<$half>::MIN_U, _) => other.1.overflowing_mul(self.0),
                     _ => (
-                        self.hi
-                            .wrapping_mul(other.lo)
-                            .wrapping_add(other.hi.wrapping_mul(self.lo)),
+                        self.1
+                            .wrapping_mul(other.0)
+                            .wrapping_add(other.1.wrapping_mul(self.0)),
                         true,
                     ),
                 };
-                let lo = self.lo.widening_mul(other.lo);
-                let lo = Self { lo: lo.0, hi: lo.1 };
-                let (hi, hi_overflow_add) = lo.hi.overflowing_add(hi);
-                let lo = Self { lo: lo.lo, hi };
+                let lo = self.0.widening_mul(other.0);
+                let lo = Self(lo.0, lo.1);
+                let (hi, hi_overflow_add) = lo.1.overflowing_add(hi);
+                let lo = Self(lo.0, hi);
                 (lo, hi_overflow_mul || hi_overflow_add)
             }
 
@@ -1328,17 +1292,17 @@ macro_rules! construct_eint_twin {
             }
 
             fn wrapping_sub(self, other: Self) -> Self {
-                let (lo, borrow) = self.lo.overflowing_sub(other.lo);
-                let hi = self.hi.wrapping_sub(other.hi).wrapping_sub(<$half>::from(borrow));
-                Self { lo, hi }
+                let (lo, borrow) = self.0.overflowing_sub(other.0);
+                let hi = self.1.wrapping_sub(other.1).wrapping_sub(<$half>::from(borrow));
+                Self(lo, hi)
             }
 
             fn wrapping_mul(self, other: Self) -> Self {
-                let (lo, hi) = self.lo.widening_mul(other.lo);
+                let (lo, hi) = self.0.widening_mul(other.0);
                 let hi = hi
-                    .wrapping_add(self.lo.wrapping_mul(other.hi))
-                    .wrapping_add(self.hi.wrapping_mul(other.lo));
-                Self { lo, hi }
+                    .wrapping_add(self.0.wrapping_mul(other.1))
+                    .wrapping_add(self.1.wrapping_mul(other.0));
+                Self(lo, hi)
             }
 
             fn wrapping_div(self, other: Self) -> Self {
@@ -1384,32 +1348,24 @@ macro_rules! construct_eint_twin {
             fn wrapping_shl(self, other: u32) -> Self {
                 let shamt = other % Self::BITS;
                 if shamt < Self::BITS / 2 {
-                    Self {
-                        lo: self.lo.wrapping_shl(shamt),
-                        hi: self.hi.wrapping_shl(shamt)
-                            | self.lo.wrapping_shr(1).wrapping_shr((Self::BITS / 2) - 1 - shamt),
-                    }
+                    Self(
+                        self.0.wrapping_shl(shamt),
+                        self.1.wrapping_shl(shamt) | self.0.wrapping_shr(1).wrapping_shr((Self::BITS / 2) - 1 - shamt),
+                    )
                 } else {
-                    Self {
-                        lo: <$half>::MIN_U,
-                        hi: self.lo.wrapping_shl(shamt - Self::BITS / 2),
-                    }
+                    Self(<$half>::MIN_U, self.0.wrapping_shl(shamt - Self::BITS / 2))
                 }
             }
 
             fn wrapping_shr(self, other: u32) -> Self {
                 let shamt = other % Self::BITS;
                 if shamt < Self::BITS / 2 {
-                    Self {
-                        lo: self.lo.wrapping_shr(shamt)
-                            | self.hi.wrapping_shl(1).wrapping_shl((Self::BITS / 2) - 1 - shamt),
-                        hi: self.hi.wrapping_shr(shamt),
-                    }
+                    Self(
+                        self.0.wrapping_shr(shamt) | self.1.wrapping_shl(1).wrapping_shl((Self::BITS / 2) - 1 - shamt),
+                        self.1.wrapping_shr(shamt),
+                    )
                 } else {
-                    Self {
-                        lo: self.hi.wrapping_shr(shamt - Self::BITS / 2),
-                        hi: <$half>::MIN_U,
-                    }
+                    Self(self.1.wrapping_shr(shamt - Self::BITS / 2), <$half>::MIN_U)
                 }
             }
 
@@ -1437,7 +1393,7 @@ macro_rules! construct_eint_twin {
                 let hi = <$half>::from_be_bytes(t);
                 t.copy_from_slice(&bytes[c..d]);
                 let lo = <$half>::from_be_bytes(t);
-                Self { lo, hi }
+                Self(lo, hi)
             }
 
             /// Create a native endian integer value from its representation as a byte array in little endian.
@@ -1451,7 +1407,7 @@ macro_rules! construct_eint_twin {
                 let lo = <$half>::from_le_bytes(t);
                 t.copy_from_slice(&bytes[c..d]);
                 let hi = <$half>::from_le_bytes(t);
-                Self { lo, hi }
+                Self(lo, hi)
             }
 
             /// Return the memory representation of this integer as a byte array in big-endian (network) byte order.
@@ -1461,8 +1417,8 @@ macro_rules! construct_eint_twin {
                 let b = Self::BITS as usize / 8 / 2;
                 let c = b;
                 let d = Self::BITS as usize / 8;
-                r[a..b].copy_from_slice(&self.hi.to_be_bytes());
-                r[c..d].copy_from_slice(&self.lo.to_be_bytes());
+                r[a..b].copy_from_slice(&self.1.to_be_bytes());
+                r[c..d].copy_from_slice(&self.0.to_be_bytes());
                 return r;
             }
 
@@ -1473,8 +1429,8 @@ macro_rules! construct_eint_twin {
                 let b = Self::BITS as usize / 8 / 2;
                 let c = b;
                 let d = Self::BITS as usize / 8;
-                r[a..b].copy_from_slice(&self.lo.to_le_bytes());
-                r[c..d].copy_from_slice(&self.hi.to_le_bytes());
+                r[a..b].copy_from_slice(&self.0.to_le_bytes());
+                r[c..d].copy_from_slice(&self.1.to_le_bytes());
                 return r;
             }
 
@@ -1487,18 +1443,18 @@ macro_rules! construct_eint_twin {
                 let twos = <$half>::ONE << (Self::BITS / 4);
                 let mask = twos - <$half>::ONE;
                 assert!(y != <$half>::ZERO);
-                assert!(y > self.hi);
+                assert!(y > self.1);
                 let s = y.leading_zeros();
                 let y = y << s;
                 let yn1 = y >> (Self::BITS / 4);
                 let yn0 = y & mask;
-                let un32 = (self.hi << s)
+                let un32 = (self.1 << s)
                     | if s == 0 {
                         <$half>::ZERO
                     } else {
-                        self.lo >> (Self::BITS / 2 - s)
+                        self.0 >> (Self::BITS / 2 - s)
                     };
-                let un10 = self.lo << s;
+                let un10 = self.0 << s;
                 let un1 = un10 >> (Self::BITS / 4);
                 let un0 = un10 & mask;
                 let mut q1 = un32 / yn1;
@@ -1524,26 +1480,26 @@ macro_rules! construct_eint_twin {
             }
 
             fn div_half_1(self, y: $half) -> (Self, $half) {
-                if self.hi < y {
+                if self.1 < y {
                     let (lo, r) = self.div_half_0(y);
                     (Self::from(lo), r)
                 } else {
-                    let (hi, r) = Self::from(self.hi).div_half_0(y);
-                    let (lo, r) = Self { lo: self.lo, hi: r }.div_half_0(y);
-                    (Self { lo, hi }, r)
+                    let (hi, r) = Self::from(self.1).div_half_0(y);
+                    let (lo, r) = Self(self.0, r).div_half_0(y);
+                    (Self(lo, hi), r)
                 }
             }
 
             /// Inspired by https://github.com/Pilatuz/bigx/blob/8615506d17c5/uint128.go#L291
             fn div(self, other: Self) -> (Self, Self) {
-                if other.hi == <$half>::ZERO {
-                    let (q, r) = self.div_half_1(other.lo);
+                if other.1 == <$half>::ZERO {
+                    let (q, r) = self.div_half_1(other.0);
                     return (q, Self::from(r));
                 }
-                let n = other.hi.leading_zeros();
+                let n = other.1.leading_zeros();
                 let u1 = self >> 1;
                 let v1 = other << n;
-                let (tq, _) = u1.div_half_0(v1.hi);
+                let (tq, _) = u1.div_half_0(v1.1);
                 let mut tq = tq >> (Self::BITS / 2 - 1 - n);
                 if tq != <$half>::ZERO {
                     tq -= <$half>::ONE;
@@ -1581,20 +1537,14 @@ macro_rules! uint_impl_from_u {
     ($name:ident, $half:ty) => {
         impl std::convert::From<$half> for $name {
             fn from(small: $half) -> Self {
-                Self {
-                    lo: small,
-                    hi: <$half>::MIN_U,
-                }
+                Self(small, <$half>::MIN_U)
             }
         }
     };
     ($name:ident, $half:ty, $from:ty) => {
         impl std::convert::From<$from> for $name {
             fn from(small: $from) -> Self {
-                Self {
-                    lo: <$half>::from(small),
-                    hi: <$half>::MIN_U,
-                }
+                Self(<$half>::from(small), <$half>::MIN_U)
             }
         }
     };

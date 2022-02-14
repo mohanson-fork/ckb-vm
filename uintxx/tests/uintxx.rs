@@ -3,18 +3,18 @@ use eint::{Eint, E128, E256, E32};
 #[test]
 fn test_wrapping_div() {
     let case_list = [[
-        E256 {
-            lo: E128(0xd3e04adfb2db76e8ce58bba4207434a4),
-            hi: E128(0x15de88272aefffffffffffffffffffff),
-        },
-        E256 {
-            lo: E128(0x686f332000000000000000000dd2966b),
-            hi: E128(0x00000bea6a6af75538be984c83ce8648),
-        },
-        E256 {
-            lo: E128(0x0000000000000000000000000001d5d8),
-            hi: E128(0x00000000000000000000000000000000),
-        },
+        E256(
+            E128(0xd3e04adfb2db76e8ce58bba4207434a4),
+            E128(0x15de88272aefffffffffffffffffffff),
+        ),
+        E256(
+            E128(0x686f332000000000000000000dd2966b),
+            E128(0x00000bea6a6af75538be984c83ce8648),
+        ),
+        E256(
+            E128(0x0000000000000000000000000001d5d8),
+            E128(0x00000000000000000000000000000000),
+        ),
     ]];
     for case in &case_list {
         let lhs = case[0];
@@ -29,46 +29,46 @@ fn test_wrapping_div() {
 fn test_wrapping_div_s() {
     let case_list = [
         [
-            E256 {
-                lo: E128(0x00000000000000000000000000000001),
-                hi: E128(0x00000000000000000000000000000000),
-            },
-            E256 {
-                lo: E128(0x00000000000000000000000000000000),
-                hi: E128(0x00000000000000000000000000000000),
-            },
-            E256 {
-                lo: E128(0xffffffffffffffffffffffffffffffff),
-                hi: E128(0xffffffffffffffffffffffffffffffff),
-            },
+            E256(
+                E128(0x00000000000000000000000000000001),
+                E128(0x00000000000000000000000000000000),
+            ),
+            E256(
+                E128(0x00000000000000000000000000000000),
+                E128(0x00000000000000000000000000000000),
+            ),
+            E256(
+                E128(0xffffffffffffffffffffffffffffffff),
+                E128(0xffffffffffffffffffffffffffffffff),
+            ),
         ],
         [
-            E256 {
-                lo: E128(0x00000000000000000000000000000000),
-                hi: E128(0x80000000000000000000000000000000),
-            },
-            E256 {
-                lo: E128(0xffffffffffffffffffffffffffffffff),
-                hi: E128(0xffffffffffffffffffffffffffffffff),
-            },
-            E256 {
-                lo: E128(0x00000000000000000000000000000000),
-                hi: E128(0x80000000000000000000000000000000),
-            },
+            E256(
+                E128(0x00000000000000000000000000000000),
+                E128(0x80000000000000000000000000000000),
+            ),
+            E256(
+                E128(0xffffffffffffffffffffffffffffffff),
+                E128(0xffffffffffffffffffffffffffffffff),
+            ),
+            E256(
+                E128(0x00000000000000000000000000000000),
+                E128(0x80000000000000000000000000000000),
+            ),
         ],
         [
-            E256 {
-                lo: E128(0x2c1fb5204d24891731a7445bdf8bcb5c),
-                hi: E128(0xea2177d8d51000000000000000000000),
-            },
-            E256 {
-                lo: E128(0x686f332000000000000000000dd2966b),
-                hi: E128(0x00000bea6a6af75538be984c83ce8648),
-            },
-            E256 {
-                lo: E128(0xfffffffffffffffffffffffffffe2a28),
-                hi: E128(0xffffffffffffffffffffffffffffffff),
-            },
+            E256(
+                E128(0x2c1fb5204d24891731a7445bdf8bcb5c),
+                E128(0xea2177d8d51000000000000000000000),
+            ),
+            E256(
+                E128(0x686f332000000000000000000dd2966b),
+                E128(0x00000bea6a6af75538be984c83ce8648),
+            ),
+            E256(
+                E128(0xfffffffffffffffffffffffffffe2a28),
+                E128(0xffffffffffffffffffffffffffffffff),
+            ),
         ],
     ];
     for case in &case_list {
@@ -83,18 +83,18 @@ fn test_wrapping_div_s() {
 #[test]
 fn test_wrapping_rem() {
     let case_list = [[
-        E256 {
-            lo: E128(0x00000000000000000000000000000007),
-            hi: E128(0x00000000000000000000000000000000),
-        },
-        E256 {
-            lo: E128(0x00000000000000000000000000000002),
-            hi: E128(0x00000000000000000000000000000000),
-        },
-        E256 {
-            lo: E128(0x00000000000000000000000000000001),
-            hi: E128(0x00000000000000000000000000000000),
-        },
+        E256(
+            E128(0x00000000000000000000000000000007),
+            E128(0x00000000000000000000000000000000),
+        ),
+        E256(
+            E128(0x00000000000000000000000000000002),
+            E128(0x00000000000000000000000000000000),
+        ),
+        E256(
+            E128(0x00000000000000000000000000000001),
+            E128(0x00000000000000000000000000000000),
+        ),
     ]];
     for case in &case_list {
         let lhs = case[0];
@@ -109,46 +109,46 @@ fn test_wrapping_rem() {
 fn test_wrapping_rem_s() {
     let case_list = [
         [
-            E256 {
-                lo: E128(0x00000000000000000000000000000001),
-                hi: E128(0x00000000000000000000000000000000),
-            },
-            E256 {
-                lo: E128(0x00000000000000000000000000000000),
-                hi: E128(0x00000000000000000000000000000000),
-            },
-            E256 {
-                lo: E128(0x00000000000000000000000000000001),
-                hi: E128(0x00000000000000000000000000000000),
-            },
+            E256(
+                E128(0x00000000000000000000000000000001),
+                E128(0x00000000000000000000000000000000),
+            ),
+            E256(
+                E128(0x00000000000000000000000000000000),
+                E128(0x00000000000000000000000000000000),
+            ),
+            E256(
+                E128(0x00000000000000000000000000000001),
+                E128(0x00000000000000000000000000000000),
+            ),
         ],
         [
-            E256 {
-                lo: E128(0x00000000000000000000000000000000),
-                hi: E128(0x80000000000000000000000000000000),
-            },
-            E256 {
-                lo: E128(0xffffffffffffffffffffffffffffffff),
-                hi: E128(0xffffffffffffffffffffffffffffffff),
-            },
-            E256 {
-                lo: E128(0x00000000000000000000000000000000),
-                hi: E128(0x00000000000000000000000000000000),
-            },
+            E256(
+                E128(0x00000000000000000000000000000000),
+                E128(0x80000000000000000000000000000000),
+            ),
+            E256(
+                E128(0xffffffffffffffffffffffffffffffff),
+                E128(0xffffffffffffffffffffffffffffffff),
+            ),
+            E256(
+                E128(0x00000000000000000000000000000000),
+                E128(0x00000000000000000000000000000000),
+            ),
         ],
         [
-            E256 {
-                lo: E128(0xfffffffffffffffffffffffffffffff9),
-                hi: E128(0xffffffffffffffffffffffffffffffff),
-            },
-            E256 {
-                lo: E128(0x00000000000000000000000000000003),
-                hi: E128(0x00000000000000000000000000000000),
-            },
-            E256 {
-                lo: E128(0xffffffffffffffffffffffffffffffff),
-                hi: E128(0xffffffffffffffffffffffffffffffff),
-            },
+            E256(
+                E128(0xfffffffffffffffffffffffffffffff9),
+                E128(0xffffffffffffffffffffffffffffffff),
+            ),
+            E256(
+                E128(0x00000000000000000000000000000003),
+                E128(0x00000000000000000000000000000000),
+            ),
+            E256(
+                E128(0xffffffffffffffffffffffffffffffff),
+                E128(0xffffffffffffffffffffffffffffffff),
+            ),
         ],
     ];
     for case in &case_list {
@@ -164,32 +164,32 @@ fn test_wrapping_rem_s() {
 fn test_average_add() {
     let case_list = [
         [
-            E256 {
-                lo: E128(0xffffffffffffffffffffffffffffffff),
-                hi: E128(0xffffffffffffffffffffffffffffffff),
-            },
-            E256 {
-                lo: E128(0xffffffffffffffffffffffffffffffff),
-                hi: E128(0xffffffffffffffffffffffffffffffff),
-            },
-            E256 {
-                lo: E128(0xffffffffffffffffffffffffffffffff),
-                hi: E128(0xffffffffffffffffffffffffffffffff),
-            },
+            E256(
+                E128(0xffffffffffffffffffffffffffffffff),
+                E128(0xffffffffffffffffffffffffffffffff),
+            ),
+            E256(
+                E128(0xffffffffffffffffffffffffffffffff),
+                E128(0xffffffffffffffffffffffffffffffff),
+            ),
+            E256(
+                E128(0xffffffffffffffffffffffffffffffff),
+                E128(0xffffffffffffffffffffffffffffffff),
+            ),
         ],
         [
-            E256 {
-                lo: E128(0x00000000000000000000000000000004),
-                hi: E128(0x00000000000000000000000000000000),
-            },
-            E256 {
-                lo: E128(0x00000000000000000000000000000006),
-                hi: E128(0x00000000000000000000000000000000),
-            },
-            E256 {
-                lo: E128(0x00000000000000000000000000000005),
-                hi: E128(0x00000000000000000000000000000000),
-            },
+            E256(
+                E128(0x00000000000000000000000000000004),
+                E128(0x00000000000000000000000000000000),
+            ),
+            E256(
+                E128(0x00000000000000000000000000000006),
+                E128(0x00000000000000000000000000000000),
+            ),
+            E256(
+                E128(0x00000000000000000000000000000005),
+                E128(0x00000000000000000000000000000000),
+            ),
         ],
     ];
     for case in &case_list {
@@ -283,22 +283,22 @@ fn test_average_sub_s() {
 
 #[test]
 fn test_bug_fix_0() {
-    let a = E256 {
-        lo: E128(0x00000000000022330000000000001122),
-        hi: E128(0x00000000000044550000000000003344),
-    };
-    let b = E256 {
-        lo: E128(0x00000000000023450000000000001234),
-        hi: E128(0x00000000000056780000000000004567),
-    };
-    let c = E256 {
-        lo: E128(0x00000000000000bb00000000000000aa),
-        hi: E128(0x00000000000000cc00000000000000dd),
-    };
-    let e = E256 {
-        lo: E128(0x000000000047f182000000000017771c),
-        hi: E128(0x000000000117122b0000000000a16174),
-    };
+    let a = E256(
+        E128(0x00000000000022330000000000001122),
+        E128(0x00000000000044550000000000003344),
+    );
+    let b = E256(
+        E128(0x00000000000023450000000000001234),
+        E128(0x00000000000056780000000000004567),
+    );
+    let c = E256(
+        E128(0x00000000000000bb00000000000000aa),
+        E128(0x00000000000000cc00000000000000dd),
+    );
+    let e = E256(
+        E128(0x000000000047f182000000000017771c),
+        E128(0x000000000117122b0000000000a16174),
+    );
     let r = (a + b) * c;
     assert_eq!(r, e);
 }

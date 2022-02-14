@@ -4,23 +4,17 @@ use proptest::prelude::*;
 construct_eint_twin!(T64, E32);
 impl std::convert::From<E32> for T64 {
     fn from(small: E32) -> Self {
-        Self {
-            lo: small,
-            hi: E32::MIN_U,
-        }
+        Self(small, E32::MIN_U)
     }
 }
 
 impl T64 {
     fn recv(small: u64) -> Self {
-        Self {
-            lo: E32(small as u32),
-            hi: E32((small >> 32) as u32),
-        }
+        Self(E32(small as u32), E32((small >> 32) as u32))
     }
 
     fn into(self) -> E64 {
-        E64(((self.hi.0 as u64) << 32) | (self.lo.0 as u64))
+        E64(((self.1 .0 as u64) << 32) | (self.0 .0 as u64))
     }
 }
 

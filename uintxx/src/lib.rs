@@ -52,6 +52,8 @@ pub trait Eint:
     fn is_negative(self) -> bool;
     fn overflowing_add_s(self, other: Self) -> (Self, bool);
     fn overflowing_add_u(self, other: Self) -> (Self, bool);
+    fn overflowing_sub_s(self, other: Self) -> (Self, bool);
+    fn overflowing_sub_u(self, other: Self) -> (Self, bool);
     fn wrapping_add(self, other: Self) -> Self;
     fn wrapping_mul(self, other: Self) -> Self;
     fn wrapping_shl(self, other: u32) -> Self;
@@ -125,16 +127,6 @@ pub trait Eint:
     /// Compare signed.
     fn cmp_s(&self, other: &Self) -> std::cmp::Ordering;
 
-    /// Calculates self - other
-    ///
-    /// Returns a tuple of the subtraction along with a boolean indicating whether an arithmetic overflow would
-    /// occur.
-    /// If an overflow would have occurred then the wrapped value is returned.
-    fn overflowing_sub(self, other: Self) -> (Self, bool);
-
-    /// Signed overflowing sub.
-    fn overflowing_sub_s(self, other: Self) -> (Self, bool);
-
     /// Calculates the multiplication of self and other.
     ///
     /// Returns a tuple of the multiplication along with a boolean indicating whether an arithmetic overflow would
@@ -178,7 +170,7 @@ pub trait Eint:
 
     /// Averaging subtract of unsigned integers.
     fn average_sub(self, other: Self) -> Self {
-        let (lo, borrow) = self.overflowing_sub(other);
+        let (lo, borrow) = self.overflowing_sub_u(other);
         if borrow {
             (lo >> 1) | (Self::ONE << (Self::BITS - 1))
         } else {
@@ -190,7 +182,7 @@ pub trait Eint:
     fn average_sub_s(self, other: Self) -> Self {
         let h0 = if !self.is_negative() { Self::MIN_U } else { Self::MAX_U };
         let h1 = if !other.is_negative() { Self::MIN_U } else { Self::MAX_U };
-        let (lo, borrow) = self.overflowing_sub(other);
+        let (lo, borrow) = self.overflowing_sub_u(other);
         let hi = h0.wrapping_sub(h1).wrapping_sub(Self::from(borrow));
         lo.wrapping_shr(1) | hi.wrapping_shl(1).wrapping_shl(Self::BITS - 2)
     }
@@ -245,8 +237,8 @@ pub trait Eint:
 
     /// Calculates self - rhs - borrow without the ability to overflow.
     fn carrying_sub(self, other: Self, carry: bool) -> (Self, bool) {
-        let (r, borrow0) = self.overflowing_sub(other);
-        let (r, borrow1) = r.overflowing_sub(if carry { Self::ONE } else { Self::MIN_U });
+        let (r, borrow0) = self.overflowing_sub_u(other);
+        let (r, borrow1) = r.overflowing_sub_u(if carry { Self::ONE } else { Self::MIN_U });
         (r, borrow0 | borrow1)
     }
 
@@ -274,7 +266,7 @@ pub trait Eint:
 
     /// Widening substract.
     fn widening_sub(self, other: Self) -> (Self, Self) {
-        let (lo, borrow) = self.overflowing_sub(other);
+        let (lo, borrow) = self.overflowing_sub_u(other);
         (lo, if borrow { Self::MAX_U } else { Self::MIN_U })
     }
 
@@ -282,7 +274,7 @@ pub trait Eint:
     fn widening_sub_s(self, other: Self) -> (Self, Self) {
         let hi0 = if self.is_negative() { Self::MAX_U } else { Self::MIN_U };
         let hi1 = if other.is_negative() { Self::MAX_U } else { Self::MIN_U };
-        let (lo, borrow) = self.overflowing_sub(other);
+        let (lo, borrow) = self.overflowing_sub_u(other);
         let hi = hi0.wrapping_sub(hi1).wrapping_sub(Self::from(borrow));
         (lo, hi)
     }
@@ -568,6 +560,16 @@ macro_rules! construct_eint_wrap {
                 (Self(r), carry)
             }
 
+            fn overflowing_sub_s(self, other: Self) -> (Self, bool) {
+                let (r, borrow) = (self.0 as $sint).overflowing_sub(other.0 as $sint);
+                (Self(r as $uint), borrow)
+            }
+
+            fn overflowing_sub_u(self, other: Self) -> (Self, bool) {
+                let (r, borrow) = self.0.overflowing_sub(other.0);
+                (Self(r), borrow)
+            }
+
             fn wrapping_add(self, other: Self) -> Self {
                 Self(self.0.wrapping_add(other.0))
             }
@@ -661,16 +663,6 @@ macro_rules! construct_eint_wrap {
 
             fn cmp_s(&self, other: &Self) -> std::cmp::Ordering {
                 (self.0 as $sint).cmp(&(other.0 as $sint))
-            }
-
-            fn overflowing_sub(self, other: Self) -> (Self, bool) {
-                let (r, b) = self.0.overflowing_sub(other.0);
-                (Self(r), b)
-            }
-
-            fn overflowing_sub_s(self, other: Self) -> (Self, bool) {
-                let (r, borrow) = (self.0 as $sint).overflowing_sub(other.0 as $sint);
-                (Self(r as $uint), borrow)
             }
 
             fn overflowing_mul(self, other: Self) -> (Self, bool) {
@@ -1070,6 +1062,22 @@ macro_rules! construct_eint_twin {
                 (Self(lo, hi), hi_carry_1 || hi_carry_2)
             }
 
+            fn overflowing_sub_s(self, other: Self) -> (Self, bool) {
+                let r = self.wrapping_sub(other);
+                if self.is_negative() == other.is_negative() {
+                    (r, false)
+                } else {
+                    (r, r.is_negative() != self.is_negative())
+                }
+            }
+
+            fn overflowing_sub_u(self, other: Self) -> (Self, bool) {
+                let (lo, lo_borrow) = self.0.overflowing_sub_u(other.0);
+                let (hi, hi_borrow_1) = self.1.overflowing_sub_u(<$half>::from(lo_borrow));
+                let (hi, hi_borrow_2) = hi.overflowing_sub_u(other.1);
+                (Self(lo, hi), hi_borrow_1 || hi_borrow_2)
+            }
+
             fn wrapping_add(self, other: Self) -> Self {
                 let (lo, carry) = self.0.overflowing_add_u(other.0);
                 let hi = self.1.wrapping_add(other.1).wrapping_add(<$half>::from(carry));
@@ -1113,7 +1121,7 @@ macro_rules! construct_eint_twin {
             }
 
             fn wrapping_sub(self, other: Self) -> Self {
-                let (lo, borrow) = self.0.overflowing_sub(other.0);
+                let (lo, borrow) = self.0.overflowing_sub_u(other.0);
                 let hi = self.1.wrapping_sub(other.1).wrapping_sub(<$half>::from(borrow));
                 Self(lo, hi)
             }
@@ -1212,22 +1220,6 @@ macro_rules! construct_eint_twin {
                     (false, true) => std::cmp::Ordering::Greater,
                     (true, false) => std::cmp::Ordering::Less,
                     (true, true) => self.cmp(&other),
-                }
-            }
-
-            fn overflowing_sub(self, other: Self) -> (Self, bool) {
-                let (lo, lo_borrow) = self.0.overflowing_sub(other.0);
-                let (hi, hi_borrow_1) = self.1.overflowing_sub(<$half>::from(lo_borrow));
-                let (hi, hi_borrow_2) = hi.overflowing_sub(other.1);
-                (Self(lo, hi), hi_borrow_1 || hi_borrow_2)
-            }
-
-            fn overflowing_sub_s(self, other: Self) -> (Self, bool) {
-                let r = self.wrapping_sub(other);
-                if self.is_negative() == other.is_negative() {
-                    (r, false)
-                } else {
-                    (r, r.is_negative() != self.is_negative())
                 }
             }
 

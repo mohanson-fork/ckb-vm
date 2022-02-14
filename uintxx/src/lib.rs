@@ -360,6 +360,18 @@ pub trait Eint:
     }
 }
 
+#[macro_export]
+macro_rules! construct_eint_wrap_from_uint {
+    ($name:ident, $uint:ty, $from:ty) => {
+        impl std::convert::From<$from> for $name {
+            fn from(small: $from) -> Self {
+                Self(small as $uint)
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! construct_eint_wrap {
     ($name:ident, $uint:ty, $sint:ty) => {
         #[derive(Copy, Clone, Default, PartialEq, Eq)]
@@ -392,11 +404,17 @@ macro_rules! construct_eint_wrap {
             }
         }
 
-        impl std::convert::From<bool> for $name {
-            fn from(b: bool) -> Self {
-                Self(b as $uint)
-            }
-        }
+        construct_eint_wrap_from_uint!($name, $uint, bool);
+        construct_eint_wrap_from_uint!($name, $uint, i8);
+        construct_eint_wrap_from_uint!($name, $uint, i16);
+        construct_eint_wrap_from_uint!($name, $uint, i32);
+        construct_eint_wrap_from_uint!($name, $uint, i64);
+        construct_eint_wrap_from_uint!($name, $uint, i128);
+        construct_eint_wrap_from_uint!($name, $uint, u8);
+        construct_eint_wrap_from_uint!($name, $uint, u16);
+        construct_eint_wrap_from_uint!($name, $uint, u32);
+        construct_eint_wrap_from_uint!($name, $uint, u64);
+        construct_eint_wrap_from_uint!($name, $uint, u128);
 
         impl std::ops::BitAnd for $name {
             type Output = Self;
@@ -812,13 +830,6 @@ macro_rules! construct_eint_wrap {
 }
 
 macro_rules! uint_wrap_from_impl {
-    ($name:ty, $uint:ty, $from:ty) => {
-        impl From<$from> for $name {
-            fn from(small: $from) -> Self {
-                Self(small as $uint)
-            }
-        }
-    };
     ($name:ty, $from:ty) => {
         impl From<$from> for $name {
             fn from(small: $from) -> Self {
@@ -833,47 +844,18 @@ construct_eint_wrap!(E16, u16, i16);
 construct_eint_wrap!(E32, u32, i32);
 construct_eint_wrap!(E64, u64, i64);
 construct_eint_wrap!(E128, u128, i128);
-uint_wrap_from_impl!(E8, u8, u8);
-uint_wrap_from_impl!(E8, u8, i8);
-uint_wrap_from_impl!(E16, u16, u8);
-uint_wrap_from_impl!(E16, u16, i8);
-uint_wrap_from_impl!(E16, u16, u16);
-uint_wrap_from_impl!(E16, u16, i16);
 uint_wrap_from_impl!(E16, E8);
-uint_wrap_from_impl!(E32, u32, u8);
-uint_wrap_from_impl!(E32, u32, i8);
-uint_wrap_from_impl!(E32, u32, u16);
-uint_wrap_from_impl!(E32, u32, i16);
-uint_wrap_from_impl!(E32, u32, u32);
-uint_wrap_from_impl!(E32, u32, i32);
 uint_wrap_from_impl!(E32, E8);
 uint_wrap_from_impl!(E32, E16);
-uint_wrap_from_impl!(E64, u64, u8);
-uint_wrap_from_impl!(E64, u64, i8);
-uint_wrap_from_impl!(E64, u64, u16);
-uint_wrap_from_impl!(E64, u64, i16);
-uint_wrap_from_impl!(E64, u64, u32);
-uint_wrap_from_impl!(E64, u64, i32);
-uint_wrap_from_impl!(E64, u64, u64);
-uint_wrap_from_impl!(E64, u64, i64);
 uint_wrap_from_impl!(E64, E8);
 uint_wrap_from_impl!(E64, E16);
 uint_wrap_from_impl!(E64, E32);
-uint_wrap_from_impl!(E128, u128, u8);
-uint_wrap_from_impl!(E128, u128, i8);
-uint_wrap_from_impl!(E128, u128, u16);
-uint_wrap_from_impl!(E128, u128, i16);
-uint_wrap_from_impl!(E128, u128, u32);
-uint_wrap_from_impl!(E128, u128, i32);
-uint_wrap_from_impl!(E128, u128, u64);
-uint_wrap_from_impl!(E128, u128, i64);
-uint_wrap_from_impl!(E128, u128, u128);
-uint_wrap_from_impl!(E128, u128, i128);
 uint_wrap_from_impl!(E128, E8);
 uint_wrap_from_impl!(E128, E16);
 uint_wrap_from_impl!(E128, E32);
 uint_wrap_from_impl!(E128, E64);
 
+#[macro_export]
 macro_rules! construct_eint_twin {
     ($name:ident, $half:ty) => {
         #[derive(Copy, Clone, Default, PartialEq, Eq)]

@@ -1,4 +1,4 @@
-use uintxx::{Element, U128, U256, U32};
+use eint::{Element, U128, U256, U32};
 
 #[test]
 fn test_wrapping_div() {

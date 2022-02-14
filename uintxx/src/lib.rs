@@ -1,9 +1,11 @@
 pub trait Element:
-    Copy
-    + Clone
+    Clone
+    + Copy
     + Default
-    + PartialEq
     + Eq
+    + From<bool>
+    + PartialEq
+    + std::fmt::Debug
     + std::fmt::Display
     + std::fmt::LowerHex
     + std::ops::BitAnd<Output = Self>
@@ -28,7 +30,6 @@ pub trait Element:
     + std::ops::RemAssign
     + std::ops::Shl<u32, Output = Self>
     + std::ops::Shr<u32, Output = Self>
-    + From<bool>
 {
     /// The size of this integer type in bits.
     const BITS: u32;
@@ -603,39 +604,30 @@ macro_rules! uint_wrap_impl {
         #[derive(Copy, Clone, Default, PartialEq, Eq)]
         pub struct $name(pub $uint);
 
-        impl std::fmt::LowerHex for $name {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                let a = format!("{:x}", self.0);
-                write!(
-                    f,
-                    "{}",
-                    String::from("0").repeat(Self::BITS as usize / 4 - a.len())
-                )?;
-                write!(f, "{}", a)
-            }
-        }
-
         impl std::fmt::Debug for $name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                let a = format!("{:x}", self.0);
-                write!(
-                    f,
-                    "{}",
-                    String::from("0").repeat(Self::BITS as usize / 4 - a.len())
-                )?;
-                write!(f, "{}", a)
+                let suffix = format!("{:x}", self.0);
+                let prefix = String::from("0").repeat(Self::BITS as usize / 4 - suffix.len());
+                write!(f, "{}", prefix)?;
+                write!(f, "{}", suffix)
             }
         }
 
         impl std::fmt::Display for $name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                let a = format!("{:x}", self.0);
-                write!(
-                    f,
-                    "{}",
-                    String::from("0").repeat(Self::BITS as usize / 4 - a.len())
-                )?;
-                write!(f, "{}", a)
+                let suffix = format!("{:x}", self.0);
+                let prefix = String::from("0").repeat(Self::BITS as usize / 4 - suffix.len());
+                write!(f, "{}", prefix)?;
+                write!(f, "{}", suffix)
+            }
+        }
+
+        impl std::fmt::LowerHex for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                let suffix = format!("{:x}", self.0);
+                let prefix = String::from("0").repeat(Self::BITS as usize / 4 - suffix.len());
+                write!(f, "{}", prefix)?;
+                write!(f, "{}", suffix)
             }
         }
 
@@ -1129,12 +1121,6 @@ macro_rules! uint_impl {
             pub hi: $half,
         }
 
-        impl std::fmt::LowerHex for $name {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                write!(f, "{:x}{:x}", self.hi, self.lo)
-            }
-        }
-
         impl std::fmt::Debug for $name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 write!(f, "{:x}{:x}", self.hi, self.lo)
@@ -1142,6 +1128,12 @@ macro_rules! uint_impl {
         }
 
         impl std::fmt::Display for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{:x}{:x}", self.hi, self.lo)
+            }
+        }
+
+        impl std::fmt::LowerHex for $name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 write!(f, "{:x}{:x}", self.hi, self.lo)
             }

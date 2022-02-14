@@ -1,5 +1,5 @@
 use ckb_vm_definitions::VLEN;
-pub use uintxx::{U1024, U128, U16, U256, U32, U512, U64, U8};
+pub use eint::{U1024, U128, U16, U256, U32, U512, U64, U8};
 
 pub struct RegisterFile([u8; (VLEN >> 3) * 32]);
 

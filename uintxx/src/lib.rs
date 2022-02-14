@@ -54,6 +54,8 @@ pub trait Eint:
     fn overflowing_add_u(self, other: Self) -> (Self, bool);
     fn wrapping_add(self, other: Self) -> Self;
     fn wrapping_mul(self, other: Self) -> Self;
+    fn wrapping_shl(self, other: u32) -> Self;
+    fn wrapping_shr(self, other: u32) -> Self;
     fn wrapping_sub(self, other: Self) -> Self;
 
     /// For integer operations, the scalar can be taken from the scalar x register specified by rs1. If XLEN>SEW, the
@@ -209,26 +211,10 @@ pub trait Eint:
     /// Wrapping (modular) remainder signed.
     fn wrapping_rem_s(self, other: Self) -> Self;
 
-    /// Panic-free bitwise shift-left; yields self << mask(rhs), where mask removes any high-order bits of rhs
-    /// that would cause the shift to exceed the bitwidth of the type.
-    ///
-    /// Note that this is not the same as a rotate-left; the RHS of a wrapping shift-left is restricted to the
-    /// range of the type, rather than the bits shifted out of the LHS being returned to the other end. The
-    /// primitive integer types all implement a rotate_left function, which may be what you want instead.
-    fn wrapping_shl(self, other: u32) -> Self;
-
     /// Shift-left with element.
     fn wrapping_shl_e(self, other: Self) -> Self {
         self.wrapping_shl(other.u32())
     }
-
-    /// Panic-free bitwise shift-right; yields self >> mask(rhs), where mask removes any high-order bits of rhs
-    /// that would cause the shift to exceed the bitwidth of the type.
-    ///
-    /// Note that this is not the same as a rotate-right; the RHS of a wrapping shift-right is restricted to
-    /// the range of the type, rather than the bits shifted out of the LHS being returned to the other end. The
-    /// primitive integer types all implement a rotate_right function, which may be what you want instead.
-    fn wrapping_shr(self, other: u32) -> Self;
 
     /// Shift-right with element.
     fn wrapping_shr_e(self, other: Self) -> Self {
@@ -590,6 +576,14 @@ macro_rules! construct_eint_wrap {
                 Self(self.0.wrapping_mul(other.0))
             }
 
+            fn wrapping_shl(self, other: u32) -> Self {
+                Self(self.0.wrapping_shl(other))
+            }
+
+            fn wrapping_shr(self, other: u32) -> Self {
+                Self(self.0.wrapping_shr(other))
+            }
+
             fn wrapping_sub(self, other: Self) -> Self {
                 Self(self.0.wrapping_sub(other.0))
             }
@@ -773,14 +767,6 @@ macro_rules! construct_eint_wrap {
                 } else {
                     Self(self.0.wrapping_rem(other.0))
                 }
-            }
-
-            fn wrapping_shl(self, other: u32) -> Self {
-                Self(self.0.wrapping_shl(other))
-            }
-
-            fn wrapping_shr(self, other: u32) -> Self {
-                Self(self.0.wrapping_shr(other))
             }
 
             fn wrapping_sra(self, other: u32) -> Self {
@@ -1098,6 +1084,34 @@ macro_rules! construct_eint_twin {
                 Self(lo, hi)
             }
 
+            fn wrapping_shl(self, other: u32) -> Self {
+                let shamt = other % Self::BITS;
+                if shamt < Self::BITS / 2 {
+                    let lo = self.0.wrapping_shl(shamt);
+                    let hi =
+                        self.1.wrapping_shl(shamt) | self.0.wrapping_shr(1).wrapping_shr((Self::BITS / 2) - 1 - shamt);
+                    Self(lo, hi)
+                } else {
+                    let lo = <$half>::MIN_U;
+                    let hi = self.0.wrapping_shl(shamt - Self::BITS / 2);
+                    Self(lo, hi)
+                }
+            }
+
+            fn wrapping_shr(self, other: u32) -> Self {
+                let shamt = other % Self::BITS;
+                if shamt < Self::BITS / 2 {
+                    let lo =
+                        self.0.wrapping_shr(shamt) | self.1.wrapping_shl(1).wrapping_shl((Self::BITS / 2) - 1 - shamt);
+                    let hi = self.1.wrapping_shr(shamt);
+                    Self(lo, hi)
+                } else {
+                    let lo = self.1.wrapping_shr(shamt - Self::BITS / 2);
+                    let hi = <$half>::MIN_U;
+                    Self(lo, hi)
+                }
+            }
+
             fn wrapping_sub(self, other: Self) -> Self {
                 let (lo, borrow) = self.0.overflowing_sub(other.0);
                 let hi = self.1.wrapping_sub(other.1).wrapping_sub(<$half>::from(borrow));
@@ -1327,30 +1341,6 @@ macro_rules! construct_eint_twin {
                     Self::MIN_U
                 } else {
                     self.divs(other).1
-                }
-            }
-
-            fn wrapping_shl(self, other: u32) -> Self {
-                let shamt = other % Self::BITS;
-                if shamt < Self::BITS / 2 {
-                    Self(
-                        self.0.wrapping_shl(shamt),
-                        self.1.wrapping_shl(shamt) | self.0.wrapping_shr(1).wrapping_shr((Self::BITS / 2) - 1 - shamt),
-                    )
-                } else {
-                    Self(<$half>::MIN_U, self.0.wrapping_shl(shamt - Self::BITS / 2))
-                }
-            }
-
-            fn wrapping_shr(self, other: u32) -> Self {
-                let shamt = other % Self::BITS;
-                if shamt < Self::BITS / 2 {
-                    Self(
-                        self.0.wrapping_shr(shamt) | self.1.wrapping_shl(1).wrapping_shl((Self::BITS / 2) - 1 - shamt),
-                        self.1.wrapping_shr(shamt),
-                    )
-                } else {
-                    Self(self.1.wrapping_shr(shamt - Self::BITS / 2), <$half>::MIN_U)
                 }
             }
 

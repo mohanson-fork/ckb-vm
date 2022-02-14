@@ -41,19 +41,12 @@ pub trait Eint:
     + std::ops::Shl<u32, Output = Self>
     + std::ops::Shr<u32, Output = Self>
 {
-    /// The size of this integer type in bits.
     const BITS: u32;
-    /// The smallest value that can be represented by this integer type.
-    const MIN: Self;
-    /// The largest value that can be represented by this integer type.
-    const MAX: Self;
-    /// The smallest signed value that can be represented by this integer type.
-    const MIN_S: Self;
-    /// The largest signed value that can be represented by this integer type.
     const MAX_S: Self;
-    /// The one value that can be represented by this integer type.
+    const MAX_U: Self;
+    const MIN_S: Self;
+    const MIN_U: Self;
     const ONE: Self;
-    /// The zero value that can be represented by this integer type.
     const ZERO: Self;
 
     /// For integer operations, the scalar can be taken from the scalar x register specified by rs1. If XLEN>SEW, the
@@ -199,8 +192,8 @@ pub trait Eint:
 
     /// Averaging subtract of signed integers.
     fn average_sub_s(self, other: Self) -> Self {
-        let h0 = if !self.is_negative() { Self::MIN } else { Self::MAX };
-        let h1 = if !other.is_negative() { Self::MIN } else { Self::MAX };
+        let h0 = if !self.is_negative() { Self::MIN_U } else { Self::MAX_U };
+        let h1 = if !other.is_negative() { Self::MIN_U } else { Self::MAX_U };
         let (lo, borrow) = self.overflowing_sub(other);
         let hi = h0.wrapping_sub(h1).wrapping_sub(Self::from(borrow));
         lo.wrapping_shr(1) | hi.wrapping_shl(1).wrapping_shl(Self::BITS - 2)
@@ -273,41 +266,41 @@ pub trait Eint:
     /// Calculates self + rhs + carry without the ability to overflow.
     fn carrying_add(self, other: Self, carry: bool) -> (Self, bool) {
         let (r, carry0) = self.overflowing_add(other);
-        let (r, carry1) = r.overflowing_add(if carry { Self::ONE } else { Self::MIN });
+        let (r, carry1) = r.overflowing_add(if carry { Self::ONE } else { Self::MIN_U });
         (r, carry0 | carry1)
     }
 
     /// Signed carring add.
     fn carrying_add_s(self, other: Self, carry: bool) -> (Self, bool) {
         let (r, carry0) = self.overflowing_add_s(other);
-        let (r, carry1) = r.overflowing_add_s(if carry { Self::ONE } else { Self::MIN });
+        let (r, carry1) = r.overflowing_add_s(if carry { Self::ONE } else { Self::MIN_U });
         (r, carry0 | carry1)
     }
 
     /// Calculates self - rhs - borrow without the ability to overflow.
     fn carrying_sub(self, other: Self, carry: bool) -> (Self, bool) {
         let (r, borrow0) = self.overflowing_sub(other);
-        let (r, borrow1) = r.overflowing_sub(if carry { Self::ONE } else { Self::MIN });
+        let (r, borrow1) = r.overflowing_sub(if carry { Self::ONE } else { Self::MIN_U });
         (r, borrow0 | borrow1)
     }
 
     /// Signed carrying sub.
     fn carrying_sub_s(self, other: Self, carry: bool) -> (Self, bool) {
         let (r, borrow0) = self.overflowing_sub_s(other);
-        let (r, borrow1) = r.overflowing_sub_s(if carry { Self::ONE } else { Self::MIN });
+        let (r, borrow1) = r.overflowing_sub_s(if carry { Self::ONE } else { Self::MIN_U });
         (r, borrow0 | borrow1)
     }
 
     /// Widening add.
     fn widening_add(self, other: Self) -> (Self, Self) {
         let (lo, carry) = self.overflowing_add(other);
-        (lo, if carry { Self::ONE } else { Self::MIN })
+        (lo, if carry { Self::ONE } else { Self::MIN_U })
     }
 
     /// Signed widening add.
     fn widening_add_s(self, other: Self) -> (Self, Self) {
-        let hi0 = if self.is_negative() { Self::MAX } else { Self::MIN };
-        let hi1 = if other.is_negative() { Self::MAX } else { Self::MIN };
+        let hi0 = if self.is_negative() { Self::MAX_U } else { Self::MIN_U };
+        let hi1 = if other.is_negative() { Self::MAX_U } else { Self::MIN_U };
         let (lo, carry) = self.overflowing_add(other);
         let hi = hi0.wrapping_add(hi1).wrapping_add(Self::from(carry));
         (lo, hi)
@@ -316,13 +309,13 @@ pub trait Eint:
     /// Widening substract.
     fn widening_sub(self, other: Self) -> (Self, Self) {
         let (lo, borrow) = self.overflowing_sub(other);
-        (lo, if borrow { Self::MAX } else { Self::MIN })
+        (lo, if borrow { Self::MAX_U } else { Self::MIN_U })
     }
 
     /// Signed widening substract.
     fn widening_sub_s(self, other: Self) -> (Self, Self) {
-        let hi0 = if self.is_negative() { Self::MAX } else { Self::MIN };
-        let hi1 = if other.is_negative() { Self::MAX } else { Self::MIN };
+        let hi0 = if self.is_negative() { Self::MAX_U } else { Self::MIN_U };
+        let hi1 = if other.is_negative() { Self::MAX_U } else { Self::MIN_U };
         let (lo, borrow) = self.overflowing_sub(other);
         let hi = hi0.wrapping_sub(hi1).wrapping_sub(Self::from(borrow));
         (lo, hi)
@@ -353,8 +346,8 @@ pub trait Eint:
     fn widening_mul_s(self, other: Self) -> (Self, Self) {
         let (lo, hi) = self.widening_mul(other);
         let hi = hi
-            - if self.is_negative() { other } else { Self::MIN }
-            - if other.is_negative() { self } else { Self::MIN };
+            - if self.is_negative() { other } else { Self::MIN_U }
+            - if other.is_negative() { self } else { Self::MIN_U };
         (lo, hi)
     }
 
@@ -534,7 +527,7 @@ macro_rules! construct_eint_wrap {
             type Output = Self;
             fn div(self, other: Self) -> Self::Output {
                 if other.0 == 0 {
-                    Self::MAX
+                    Self::MAX_U
                 } else {
                     Self(self.0.wrapping_div(other.0))
                 }
@@ -588,8 +581,8 @@ macro_rules! construct_eint_wrap {
 
         impl Eint for $name {
             const BITS: u32 = <$uint>::MIN.leading_zeros();
-            const MIN: Self = Self(0);
-            const MAX: Self = Self(<$uint>::MAX);
+            const MIN_U: Self = Self(0);
+            const MAX_U: Self = Self(<$uint>::MAX);
             const MIN_S: Self = Self(<$sint>::MIN as $uint);
             const MAX_S: Self = Self(<$sint>::MAX as $uint);
             const ONE: Self = Self(1);
@@ -710,7 +703,7 @@ macro_rules! construct_eint_wrap {
             fn saturating_add(self, other: Self) -> (Self, bool) {
                 let (r, overflow) = self.overflowing_add(other);
                 if overflow {
-                    (Self::MAX, overflow)
+                    (Self::MAX_U, overflow)
                 } else {
                     (r, overflow)
                 }
@@ -735,7 +728,7 @@ macro_rules! construct_eint_wrap {
                 if self > other {
                     (self.wrapping_sub(other), false)
                 } else {
-                    (Self::MIN, true)
+                    (Self::MIN_U, true)
                 }
             }
 
@@ -768,7 +761,7 @@ macro_rules! construct_eint_wrap {
 
             fn wrapping_div(self, other: Self) -> Self {
                 if other.0 == 0 {
-                    Self::MAX
+                    Self::MAX_U
                 } else {
                     Self(self.0.wrapping_div(other.0))
                 }
@@ -776,8 +769,8 @@ macro_rules! construct_eint_wrap {
 
             fn wrapping_div_s(self, other: Self) -> Self {
                 if other.0 == 0 {
-                    Self::MAX
-                } else if self.0 == 1 << (Self::BITS - 1) && other == Self::MAX {
+                    Self::MAX_U
+                } else if self.0 == 1 << (Self::BITS - 1) && other == Self::MAX_U {
                     Self::ONE << (Self::BITS - 1)
                 } else {
                     Self(self.0.wrapping_div(other.0))
@@ -795,8 +788,8 @@ macro_rules! construct_eint_wrap {
             fn wrapping_rem_s(self, other: Self) -> Self {
                 if other.0 == 0 {
                     self
-                } else if self.0 == 1 << (Self::BITS - 1) && other == Self::MAX {
-                    Self::MIN
+                } else if self.0 == 1 << (Self::BITS - 1) && other == Self::MAX_U {
+                    Self::MIN_U
                 } else {
                     Self(self.0.wrapping_rem(other.0))
                 }
@@ -872,7 +865,7 @@ macro_rules! construct_eint_twin_from_uint {
             fn from(small: $from) -> Self {
                 Self {
                     lo: <$half>::from(small),
-                    hi: <$half>::MIN,
+                    hi: <$half>::MIN_U,
                 }
             }
         }
@@ -886,7 +879,11 @@ macro_rules! construct_eint_twin_from_sint {
             fn from(small: $from) -> Self {
                 Self {
                     lo: <$half>::from(small),
-                    hi: if small >= 0 { <$half>::MIN } else { <$half>::MAX },
+                    hi: if small >= 0 {
+                        <$half>::MIN_U
+                    } else {
+                        <$half>::MAX_U
+                    },
                 }
             }
         }
@@ -1098,29 +1095,29 @@ macro_rules! construct_eint_twin {
 
         impl Eint for $name {
             const BITS: u32 = <$half>::BITS * 2;
-            const MIN: Self = Self {
-                lo: <$half>::MIN,
-                hi: <$half>::MIN,
+            const MAX_S: Self = Self {
+                lo: <$half>::MAX_U,
+                hi: <$half>::MAX_S,
             };
-            const MAX: Self = Self {
-                lo: <$half>::MAX,
-                hi: <$half>::MAX,
+            const MAX_U: Self = Self {
+                lo: <$half>::MAX_U,
+                hi: <$half>::MAX_U,
             };
             const MIN_S: Self = Self {
-                lo: <$half>::MIN,
+                lo: <$half>::MIN_U,
                 hi: <$half>::MIN_S,
             };
-            const MAX_S: Self = Self {
-                lo: <$half>::MAX,
-                hi: <$half>::MAX_S,
+            const MIN_U: Self = Self {
+                lo: <$half>::MIN_U,
+                hi: <$half>::MIN_U,
             };
             const ONE: Self = Self {
                 lo: <$half>::ONE,
-                hi: <$half>::MIN,
+                hi: <$half>::MIN_U,
             };
             const ZERO: Self = Self {
-                lo: <$half>::MIN,
-                hi: <$half>::MIN,
+                lo: <$half>::MIN_U,
+                hi: <$half>::MIN_U,
             };
 
             fn vx_s(x: u64) -> Self {
@@ -1167,11 +1164,11 @@ macro_rules! construct_eint_twin {
             }
 
             fn is_positive(self) -> bool {
-                self != <$name>::MIN && self.wrapping_shr(Self::BITS - 1) == <$name>::MIN
+                self != <$name>::MIN_U && self.wrapping_shr(Self::BITS - 1) == <$name>::MIN_U
             }
 
             fn is_negative(self) -> bool {
-                self != <$name>::MIN && self.wrapping_shr(Self::BITS - 1) == <$name>::ONE
+                self != <$name>::MIN_U && self.wrapping_shr(Self::BITS - 1) == <$name>::ONE
             }
 
             fn read(b: &[u8]) -> Self {
@@ -1194,7 +1191,7 @@ macro_rules! construct_eint_twin {
             }
 
             fn leading_zeros(self) -> u32 {
-                if self.hi == <$half>::MIN {
+                if self.hi == <$half>::MIN_U {
                     Self::BITS / 2 + self.lo.leading_zeros()
                 } else {
                     self.hi.leading_zeros()
@@ -1202,7 +1199,7 @@ macro_rules! construct_eint_twin {
             }
 
             fn trailing_zeros(self) -> u32 {
-                if self.lo == <$half>::MIN {
+                if self.lo == <$half>::MIN_U {
                     Self::BITS / 2 + self.hi.trailing_zeros()
                 } else {
                     self.lo.trailing_zeros()
@@ -1258,8 +1255,8 @@ macro_rules! construct_eint_twin {
 
             fn overflowing_mul(self, other: Self) -> (Self, bool) {
                 let (hi, hi_overflow_mul) = match (self.hi, other.hi) {
-                    (_, <$half>::MIN) => self.hi.overflowing_mul(other.lo),
-                    (<$half>::MIN, _) => other.hi.overflowing_mul(self.lo),
+                    (_, <$half>::MIN_U) => self.hi.overflowing_mul(other.lo),
+                    (<$half>::MIN_U, _) => other.hi.overflowing_mul(self.lo),
                     _ => (
                         self.hi
                             .wrapping_mul(other.lo)
@@ -1285,7 +1282,7 @@ macro_rules! construct_eint_twin {
             fn saturating_add(self, other: Self) -> (Self, bool) {
                 let (r, overflow) = self.overflowing_add(other);
                 if overflow {
-                    (Self::MAX, overflow)
+                    (Self::MAX_U, overflow)
                 } else {
                     (r, overflow)
                 }
@@ -1310,7 +1307,7 @@ macro_rules! construct_eint_twin {
                 if self > other {
                     (self.wrapping_sub(other), false)
                 } else {
-                    (Self::MIN, true)
+                    (Self::MIN_U, true)
                 }
             }
 
@@ -1350,8 +1347,8 @@ macro_rules! construct_eint_twin {
             }
 
             fn wrapping_div(self, other: Self) -> Self {
-                if other == Self::MIN {
-                    Self::MAX
+                if other == Self::MIN_U {
+                    Self::MAX_U
                 } else {
                     self.div(other).0
                 }
@@ -1359,9 +1356,9 @@ macro_rules! construct_eint_twin {
 
             fn wrapping_div_s(self, other: Self) -> Self {
                 let minus_min = Self::ONE << (Self::BITS - 1);
-                let minus_one = Self::MAX;
-                if other == Self::MIN {
-                    Self::MAX
+                let minus_one = Self::MAX_U;
+                if other == Self::MIN_U {
+                    Self::MAX_U
                 } else if self == minus_min && other == minus_one {
                     minus_min
                 } else {
@@ -1370,7 +1367,7 @@ macro_rules! construct_eint_twin {
             }
 
             fn wrapping_rem(self, other: Self) -> Self {
-                if other == Self::MIN {
+                if other == Self::MIN_U {
                     self
                 } else {
                     self.div(other).1
@@ -1379,11 +1376,11 @@ macro_rules! construct_eint_twin {
 
             fn wrapping_rem_s(self, other: Self) -> Self {
                 let minus_min = Self::ONE << (Self::BITS - 1);
-                let minus_one = Self::MAX;
-                if other == Self::MIN {
+                let minus_one = Self::MAX_U;
+                if other == Self::MIN_U {
                     self
                 } else if self == minus_min && other == minus_one {
-                    Self::MIN
+                    Self::MIN_U
                 } else {
                     self.divs(other).1
                 }
@@ -1399,7 +1396,7 @@ macro_rules! construct_eint_twin {
                     }
                 } else {
                     Self {
-                        lo: <$half>::MIN,
+                        lo: <$half>::MIN_U,
                         hi: self.lo.wrapping_shl(shamt - Self::BITS / 2),
                     }
                 }
@@ -1416,7 +1413,7 @@ macro_rules! construct_eint_twin {
                 } else {
                     Self {
                         lo: self.hi.wrapping_shr(shamt - Self::BITS / 2),
-                        hi: <$half>::MIN,
+                        hi: <$half>::MIN_U,
                     }
                 }
             }
@@ -1424,9 +1421,9 @@ macro_rules! construct_eint_twin {
             fn wrapping_sra(self, other: u32) -> Self {
                 let shamt = other % Self::BITS;
                 let hi = if self.is_negative() && shamt != 0 {
-                    Self::MAX << (Self::BITS - shamt)
+                    Self::MAX_U << (Self::BITS - shamt)
                 } else {
-                    Self::MIN
+                    Self::MIN_U
                 };
                 let lo = self.wrapping_shr(shamt);
                 hi | lo
@@ -1591,7 +1588,7 @@ macro_rules! uint_impl_from_u {
             fn from(small: $half) -> Self {
                 Self {
                     lo: small,
-                    hi: <$half>::MIN,
+                    hi: <$half>::MIN_U,
                 }
             }
         }
@@ -1601,7 +1598,7 @@ macro_rules! uint_impl_from_u {
             fn from(small: $from) -> Self {
                 Self {
                     lo: <$half>::from(small),
-                    hi: <$half>::MIN,
+                    hi: <$half>::MIN_U,
                 }
             }
         }

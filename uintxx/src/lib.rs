@@ -1,4 +1,4 @@
-pub trait Element:
+pub trait Eint:
     Clone
     + Copy
     + Default
@@ -361,50 +361,50 @@ pub trait Element:
 }
 
 pub mod alu {
-    use crate::Element;
+    use crate::Eint;
 
     /// Set if equal.
-    pub fn seq<T: Element>(lhs: T, rhs: T) -> bool {
+    pub fn seq<T: Eint>(lhs: T, rhs: T) -> bool {
         lhs == rhs
     }
 
     /// Set if not equal.
-    pub fn sne<T: Element>(lhs: T, rhs: T) -> bool {
+    pub fn sne<T: Eint>(lhs: T, rhs: T) -> bool {
         lhs != rhs
     }
 
     /// Set if less than, unsigned.
-    pub fn sltu<T: Element>(lhs: T, rhs: T) -> bool {
+    pub fn sltu<T: Eint>(lhs: T, rhs: T) -> bool {
         lhs < rhs
     }
 
     /// Set if less than, signed.
-    pub fn slt<T: Element>(lhs: T, rhs: T) -> bool {
+    pub fn slt<T: Eint>(lhs: T, rhs: T) -> bool {
         lhs.cmp_s(&rhs) == std::cmp::Ordering::Less
     }
 
     /// Set if less than or equal, unsigned.
-    pub fn sleu<T: Element>(lhs: T, rhs: T) -> bool {
+    pub fn sleu<T: Eint>(lhs: T, rhs: T) -> bool {
         lhs <= rhs
     }
 
     /// Set if less than or equal, signed.
-    pub fn sle<T: Element>(lhs: T, rhs: T) -> bool {
+    pub fn sle<T: Eint>(lhs: T, rhs: T) -> bool {
         lhs.cmp_s(&rhs) != std::cmp::Ordering::Greater
     }
 
     /// Set if greater than, unsigned.
-    pub fn sgtu<T: Element>(lhs: T, rhs: T) -> bool {
+    pub fn sgtu<T: Eint>(lhs: T, rhs: T) -> bool {
         lhs > rhs
     }
 
     /// Set if greater than, signed.
-    pub fn sgt<T: Element>(lhs: T, rhs: T) -> bool {
+    pub fn sgt<T: Eint>(lhs: T, rhs: T) -> bool {
         lhs.cmp_s(&rhs) == std::cmp::Ordering::Greater
     }
 
     /// Unsigned maximum.
-    pub fn maxu<T: Element>(lhs: T, rhs: T) -> T {
+    pub fn maxu<T: Eint>(lhs: T, rhs: T) -> T {
         if lhs > rhs {
             lhs
         } else {
@@ -413,7 +413,7 @@ pub mod alu {
     }
 
     /// Signed maximum.
-    pub fn max<T: Element>(lhs: T, rhs: T) -> T {
+    pub fn max<T: Eint>(lhs: T, rhs: T) -> T {
         if lhs.cmp_s(&rhs) == std::cmp::Ordering::Greater {
             lhs
         } else {
@@ -422,7 +422,7 @@ pub mod alu {
     }
 
     /// Unsigned minimum.
-    pub fn minu<T: Element>(lhs: T, rhs: T) -> T {
+    pub fn minu<T: Eint>(lhs: T, rhs: T) -> T {
         if lhs < rhs {
             lhs
         } else {
@@ -431,7 +431,7 @@ pub mod alu {
     }
 
     /// Signed minimum.
-    pub fn min<T: Element>(lhs: T, rhs: T) -> T {
+    pub fn min<T: Eint>(lhs: T, rhs: T) -> T {
         if lhs.cmp_s(&rhs) == std::cmp::Ordering::Less {
             lhs
         } else {
@@ -440,125 +440,125 @@ pub mod alu {
     }
 
     /// Bitwise and.
-    pub fn and<T: Element>(lhs: T, rhs: T) -> T {
+    pub fn and<T: Eint>(lhs: T, rhs: T) -> T {
         lhs & rhs
     }
 
     /// Bitwise or.
-    pub fn or<T: Element>(lhs: T, rhs: T) -> T {
+    pub fn or<T: Eint>(lhs: T, rhs: T) -> T {
         lhs | rhs
     }
 
     /// Bitwise xor.
-    pub fn xor<T: Element>(lhs: T, rhs: T) -> T {
+    pub fn xor<T: Eint>(lhs: T, rhs: T) -> T {
         lhs ^ rhs
     }
 
     /// Saturating adds of unsigned integers.
-    pub fn saddu<T: Element>(lhs: T, rhs: T) -> T {
+    pub fn saddu<T: Eint>(lhs: T, rhs: T) -> T {
         let (r, _) = lhs.saturating_add(rhs);
         r
     }
 
     /// Saturating adds of signed integers.
-    pub fn sadd<T: Element>(lhs: T, rhs: T) -> T {
+    pub fn sadd<T: Eint>(lhs: T, rhs: T) -> T {
         let (r, _) = lhs.saturating_add_s(rhs);
         r
     }
 
     /// Saturating subtract of unsigned integers.
-    pub fn ssubu<T: Element>(lhs: T, rhs: T) -> T {
+    pub fn ssubu<T: Eint>(lhs: T, rhs: T) -> T {
         let (r, _) = lhs.saturating_sub(rhs);
         r
     }
 
     /// Saturating subtract of signed integers.
-    pub fn ssub<T: Element>(lhs: T, rhs: T) -> T {
+    pub fn ssub<T: Eint>(lhs: T, rhs: T) -> T {
         let (r, _) = lhs.saturating_sub_s(rhs);
         r
     }
 
     /// Copy rhs.
-    pub fn mv<T: Element>(_: T, rhs: T) -> T {
+    pub fn mv<T: Eint>(_: T, rhs: T) -> T {
         rhs
     }
 
     /// Signed multiply, returning high bits of product.
-    pub fn mulh<T: Element>(lhs: T, rhs: T) -> T {
+    pub fn mulh<T: Eint>(lhs: T, rhs: T) -> T {
         let (_, hi) = lhs.widening_mul_s(rhs);
         hi
     }
 
     /// Unsigned multiply, returning high bits of product.
-    pub fn mulhu<T: Element>(lhs: T, rhs: T) -> T {
+    pub fn mulhu<T: Eint>(lhs: T, rhs: T) -> T {
         let (_, hi) = lhs.widening_mul(rhs);
         hi
     }
 
     /// Signed(vs2)-Unsigned multiply, returning high bits of product.
-    pub fn mulhsu<T: Element>(lhs: T, rhs: T) -> T {
+    pub fn mulhsu<T: Eint>(lhs: T, rhs: T) -> T {
         let (_, hi) = lhs.widening_mul_su(rhs);
         hi
     }
 
     /// Get carry out of addition.
-    pub fn madc<T: Element>(lhs: T, rhs: T) -> bool {
+    pub fn madc<T: Eint>(lhs: T, rhs: T) -> bool {
         let (_, carry) = lhs.overflowing_add_s(rhs);
         carry
     }
 
     /// Get the borrow out of subtraction.
-    pub fn msbc<T: Element>(lhs: T, rhs: T) -> bool {
+    pub fn msbc<T: Eint>(lhs: T, rhs: T) -> bool {
         let (_, borrow) = lhs.overflowing_sub_s(rhs);
         borrow
     }
 
     /// Calculates self + rhs + carry without the ability to overflow.
-    pub fn adc<T: Element>(lhs: T, rhs: T, carry: bool) -> T {
+    pub fn adc<T: Eint>(lhs: T, rhs: T, carry: bool) -> T {
         let (r, _) = lhs.carrying_add_s(rhs, carry);
         r
     }
 
     /// Calculates self - rhs - borrow without the ability to overflow.
-    pub fn sbc<T: Element>(lhs: T, rhs: T, borrow: bool) -> T {
+    pub fn sbc<T: Eint>(lhs: T, rhs: T, borrow: bool) -> T {
         let (r, _) = lhs.carrying_sub_s(rhs, borrow);
         r
     }
 
     /// Calculates carry_out(self + rhs + carry) without the ability to overflow.
-    pub fn madcm<T: Element>(lhs: T, rhs: T, carry: bool) -> bool {
+    pub fn madcm<T: Eint>(lhs: T, rhs: T, carry: bool) -> bool {
         let (_, r) = lhs.carrying_add_s(rhs, carry);
         r
     }
 
     /// Calculates borrow_out(self - rhs - borrow) without the ability to overflow.
-    pub fn msbcm<T: Element>(lhs: T, rhs: T, borrow: bool) -> bool {
+    pub fn msbcm<T: Eint>(lhs: T, rhs: T, borrow: bool) -> bool {
         let (_, r) = lhs.carrying_sub_s(rhs, borrow);
         r
     }
 
     /// Integer multiply-add, overwrite addend
-    pub fn macc<T: Element>(lhs: T, rhs: T, r: T) -> T {
+    pub fn macc<T: Eint>(lhs: T, rhs: T, r: T) -> T {
         r + (rhs * lhs)
     }
 
     /// Integer multiply-sub, overwrite minuend
-    pub fn nmsac<T: Element>(lhs: T, rhs: T, r: T) -> T {
+    pub fn nmsac<T: Eint>(lhs: T, rhs: T, r: T) -> T {
         r - (rhs * lhs)
     }
 
     /// Integer multiply-add, overwrite multiplicand
-    pub fn madd<T: Element>(lhs: T, rhs: T, r: T) -> T {
+    pub fn madd<T: Eint>(lhs: T, rhs: T, r: T) -> T {
         lhs + (rhs * r)
     }
 
     /// Integer multiply-sub, overwrite multiplicand
-    pub fn nmsub<T: Element>(lhs: T, rhs: T, r: T) -> T {
+    pub fn nmsub<T: Eint>(lhs: T, rhs: T, r: T) -> T {
         lhs - (rhs * r)
     }
 
     /// Widening unsigned-integer multiply-add, overwrite addend
-    pub fn wmaccu<T: Element>(lhs: T, rhs: T, r: T) -> (T, T) {
+    pub fn wmaccu<T: Eint>(lhs: T, rhs: T, r: T) -> (T, T) {
         let (lo, hi) = lhs.widening_mul(rhs);
         let (lo, carry) = lo.overflowing_add(r);
         let hi = hi.wrapping_add(T::from(carry));
@@ -566,7 +566,7 @@ pub mod alu {
     }
 
     /// Widening signed-integer multiply-add, overwrite addend
-    pub fn wmacc<T: Element>(lhs: T, rhs: T, r: T) -> (T, T) {
+    pub fn wmacc<T: Eint>(lhs: T, rhs: T, r: T) -> (T, T) {
         let (lo, hi) = lhs.widening_mul_s(rhs);
         let (lo, carry) = lo.overflowing_add(r);
         let hi = hi.wrapping_add(T::from(carry));
@@ -574,7 +574,7 @@ pub mod alu {
     }
 
     /// Widening signed-unsigned-integer multiply-add, overwrite addend
-    pub fn wmaccsu<T: Element>(lhs: T, rhs: T, r: T) -> (T, T) {
+    pub fn wmaccsu<T: Eint>(lhs: T, rhs: T, r: T) -> (T, T) {
         let (lo, hi) = lhs.widening_mul_su(rhs);
         let (lo, carry) = lo.overflowing_add(r);
         let hi = hi.wrapping_add(T::from(carry));
@@ -582,7 +582,7 @@ pub mod alu {
     }
 
     /// Widening unsigned-signed-integer multiply-add, overwrite addend
-    pub fn wmaccus<T: Element>(lhs: T, rhs: T, r: T) -> (T, T) {
+    pub fn wmaccus<T: Eint>(lhs: T, rhs: T, r: T) -> (T, T) {
         let (lo, hi) = rhs.widening_mul_su(lhs);
         let (lo, carry) = lo.overflowing_add(r);
         let hi = hi.wrapping_add(T::from(carry));
@@ -590,7 +590,7 @@ pub mod alu {
     }
 
     /// The vector integer merge instructions combine two source operands based on a mask
-    pub fn merge<T: Element>(lhs: T, rhs: T, mask: bool) -> T {
+    pub fn merge<T: Eint>(lhs: T, rhs: T, mask: bool) -> T {
         if mask {
             rhs
         } else {
@@ -797,7 +797,7 @@ macro_rules! uint_wrap_impl {
             }
         }
 
-        impl Element for $name {
+        impl Eint for $name {
             const BITS: u32 = <$uint>::MIN.leading_zeros();
             const MIN: Self = Self(0);
             const MAX: Self = Self(<$uint>::MAX);
@@ -1303,7 +1303,7 @@ macro_rules! uint_impl {
             }
         }
 
-        impl Element for $name {
+        impl Eint for $name {
             const BITS: u32 = <$half>::BITS * 2;
             const MIN: Self = Self {
                 lo: <$half>::MIN,

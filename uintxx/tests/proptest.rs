@@ -6,7 +6,7 @@ impl std::convert::From<E32> for T64 {
     fn from(small: E32) -> Self {
         Self {
             lo: small,
-            hi: E32::MIN,
+            hi: E32::MIN_U,
         }
     }
 }
@@ -48,10 +48,10 @@ proptest! {
     //     assert_eq!(b0, b1);
     // }
 
-    // #[test]
-    // fn test_wrapping_add(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
-    //     let r0 = Eint::wrapping_add(E64::from(x), E64::from(y));
-    //     let r1 = Eint::wrapping_add(T64::recv(x), T64::recv(y));
-    //     assert_eq!(r0, r1.into());
-    // }
+    #[test]
+    fn test_wrapping_add(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
+        let r0 = Eint::wrapping_add(E64::from(x), E64::from(y));
+        let r1 = Eint::wrapping_add(T64::recv(x), T64::recv(y));
+        assert_eq!(r0, r1.into());
+    }
 }

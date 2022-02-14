@@ -49,6 +49,10 @@ pub trait Eint:
     const ONE: Self;
     const ZERO: Self;
 
+    fn is_negative(self) -> bool;
+    fn overflowing_add_s(self, other: Self) -> (Self, bool);
+    fn wrapping_add(self, other: Self) -> Self;
+
     /// For integer operations, the scalar can be taken from the scalar x register specified by rs1. If XLEN>SEW, the
     /// least-significant SEW bits of the x register are used, unless otherwise specified. If XLEN<SEW, the value from
     /// the x register is sign-extended to SEW bits.
@@ -95,9 +99,6 @@ pub trait Eint:
     /// Returns true if self is positive and false if the number is zero or negative.
     fn is_positive(self) -> bool;
 
-    /// Returns true if self is negative and false if the number is zero or positive.
-    fn is_negative(self) -> bool;
-
     /// Read a native endian integer value from its representation as a byte slice in little endian.
     fn read(b: &[u8]) -> Self;
 
@@ -125,9 +126,6 @@ pub trait Eint:
     /// occur.
     /// If an overflow would have occurred then the wrapped value is returned.
     fn overflowing_add(self, other: Self) -> (Self, bool);
-
-    /// Signed overflowing add.
-    fn overflowing_add_s(self, other: Self) -> (Self, bool);
 
     /// Calculates self - other
     ///
@@ -198,9 +196,6 @@ pub trait Eint:
         let hi = h0.wrapping_sub(h1).wrapping_sub(Self::from(borrow));
         lo.wrapping_shr(1) | hi.wrapping_shl(1).wrapping_shl(Self::BITS - 2)
     }
-
-    /// Wrapping (modular) addition. Computes self + other, wrapping around at the boundary of the type.
-    fn wrapping_add(self, other: Self) -> Self;
 
     /// Wrapping (modular) subtraction. Computes self - other, wrapping around at the boundary of the type.
     fn wrapping_sub(self, other: Self) -> Self;
@@ -588,6 +583,19 @@ macro_rules! construct_eint_wrap {
             const ONE: Self = Self(1);
             const ZERO: Self = Self(0);
 
+            fn is_negative(self) -> bool {
+                (self.0 as $sint).is_negative()
+            }
+
+            fn overflowing_add_s(self, other: Self) -> (Self, bool) {
+                let (r, carry) = (self.0 as $sint).overflowing_add(other.0 as $sint);
+                (Self(r as $uint), carry)
+            }
+
+            fn wrapping_add(self, other: Self) -> Self {
+                Self(self.0.wrapping_add(other.0))
+            }
+
             fn vx_s(x: u64) -> Self {
                 if Self::BITS <= 64 {
                     Self(x as $uint)
@@ -631,10 +639,6 @@ macro_rules! construct_eint_wrap {
                 (self.0 as $sint).is_positive()
             }
 
-            fn is_negative(self) -> bool {
-                (self.0 as $sint).is_negative()
-            }
-
             fn read(b: &[u8]) -> Self {
                 let mut buf = [0u8; Self::BITS as usize >> 3];
                 buf.copy_from_slice(&b);
@@ -670,11 +674,6 @@ macro_rules! construct_eint_wrap {
             fn overflowing_add(self, other: Self) -> (Self, bool) {
                 let (r, b) = self.0.overflowing_add(other.0);
                 (Self(r), b)
-            }
-
-            fn overflowing_add_s(self, other: Self) -> (Self, bool) {
-                let (r, carry) = (self.0 as $sint).overflowing_add(other.0 as $sint);
-                (Self(r as $uint), carry)
             }
 
             fn overflowing_sub(self, other: Self) -> (Self, bool) {
@@ -745,10 +744,6 @@ macro_rules! construct_eint_wrap {
                     }
                 }
                 (r, false)
-            }
-
-            fn wrapping_add(self, other: Self) -> Self {
-                Self(self.0.wrapping_add(other.0))
             }
 
             fn wrapping_sub(self, other: Self) -> Self {
@@ -1120,6 +1115,25 @@ macro_rules! construct_eint_twin {
                 hi: <$half>::MIN_U,
             };
 
+            fn is_negative(self) -> bool {
+                self != <$name>::MIN_U && self.wrapping_shr(Self::BITS - 1) == <$name>::ONE
+            }
+
+            fn overflowing_add_s(self, other: Self) -> (Self, bool) {
+                let r = self.wrapping_add(other);
+                if self.is_negative() == other.is_negative() {
+                    (r, r.is_negative() != self.is_negative())
+                } else {
+                    (r, false)
+                }
+            }
+
+            fn wrapping_add(self, other: Self) -> Self {
+                let (lo, carry) = self.lo.overflowing_add(other.lo);
+                let hi = self.hi.wrapping_add(other.hi).wrapping_add(<$half>::from(carry));
+                Self { lo, hi }
+            }
+
             fn vx_s(x: u64) -> Self {
                 Self::from(x as i64)
             }
@@ -1165,10 +1179,6 @@ macro_rules! construct_eint_twin {
 
             fn is_positive(self) -> bool {
                 self != <$name>::MIN_U && self.wrapping_shr(Self::BITS - 1) == <$name>::MIN_U
-            }
-
-            fn is_negative(self) -> bool {
-                self != <$name>::MIN_U && self.wrapping_shr(Self::BITS - 1) == <$name>::ONE
             }
 
             fn read(b: &[u8]) -> Self {
@@ -1226,15 +1236,6 @@ macro_rules! construct_eint_twin {
                 let (hi, hi_carry_1) = self.hi.overflowing_add(<$half>::from(lo_carry));
                 let (hi, hi_carry_2) = hi.overflowing_add(other.hi);
                 (Self { lo, hi }, hi_carry_1 || hi_carry_2)
-            }
-
-            fn overflowing_add_s(self, other: Self) -> (Self, bool) {
-                let r = self.wrapping_add(other);
-                if self.is_negative() == other.is_negative() {
-                    (r, r.is_negative() != self.is_negative())
-                } else {
-                    (r, false)
-                }
             }
 
             fn overflowing_sub(self, other: Self) -> (Self, bool) {
@@ -1324,12 +1325,6 @@ macro_rules! construct_eint_twin {
                     }
                 }
                 (r, false)
-            }
-
-            fn wrapping_add(self, other: Self) -> Self {
-                let (lo, carry) = self.lo.overflowing_add(other.lo);
-                let hi = self.hi.wrapping_add(other.hi).wrapping_add(<$half>::from(carry));
-                Self { lo, hi }
             }
 
             fn wrapping_sub(self, other: Self) -> Self {

@@ -234,3 +234,8 @@ pub fn merge<T: Eint>(lhs: T, rhs: T, mask: bool) -> T {
         lhs
     }
 }
+
+/// Wrapping (modular) subtraction. Computes other - self, wrapping around at the boundary of the type.
+pub fn rsub<T: Eint>(lhs: T, rhs: T) -> T {
+    rhs.wrapping_sub(lhs)
+}

@@ -50,6 +50,13 @@ proptest! {
     }
 
     #[test]
+    fn test_wrapping_mul(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
+        let r0 = Eint::wrapping_mul(E64::from(x), E64::from(y));
+        let r1 = Eint::wrapping_mul(T64::recv(x), T64::recv(y));
+        assert_eq!(r0, r1.into());
+    }
+
+    #[test]
     fn test_wrapping_sub(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
         let r0 = Eint::wrapping_sub(E64::from(x), E64::from(y));
         let r1 = Eint::wrapping_sub(T64::recv(x), T64::recv(y));

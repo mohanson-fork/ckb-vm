@@ -53,6 +53,7 @@ pub trait Eint:
     fn overflowing_add_s(self, other: Self) -> (Self, bool);
     fn overflowing_add_u(self, other: Self) -> (Self, bool);
     fn wrapping_add(self, other: Self) -> Self;
+    fn wrapping_mul(self, other: Self) -> Self;
     fn wrapping_sub(self, other: Self) -> Self;
 
     /// For integer operations, the scalar can be taken from the scalar x register specified by rs1. If XLEN>SEW, the
@@ -191,9 +192,6 @@ pub trait Eint:
         let hi = h0.wrapping_sub(h1).wrapping_sub(Self::from(borrow));
         lo.wrapping_shr(1) | hi.wrapping_shl(1).wrapping_shl(Self::BITS - 2)
     }
-
-    /// Wrapping (modular) multiplication. Computes self * other, wrapping around at the boundary of the type.
-    fn wrapping_mul(self, other: Self) -> Self;
 
     /// Wrapping (modular) division. Computes self / rhs. Wrapped division on unsigned types is just normal division.
     /// There’s no way wrapping could ever happen. This function exists, so that all operations are accounted for in
@@ -588,6 +586,10 @@ macro_rules! construct_eint_wrap {
                 Self(self.0.wrapping_add(other.0))
             }
 
+            fn wrapping_mul(self, other: Self) -> Self {
+                Self(self.0.wrapping_mul(other.0))
+            }
+
             fn wrapping_sub(self, other: Self) -> Self {
                 Self(self.0.wrapping_sub(other.0))
             }
@@ -735,10 +737,6 @@ macro_rules! construct_eint_wrap {
                     }
                 }
                 (r, false)
-            }
-
-            fn wrapping_mul(self, other: Self) -> Self {
-                Self(self.0.wrapping_mul(other.0))
             }
 
             fn wrapping_div(self, other: Self) -> Self {
@@ -1092,6 +1090,14 @@ macro_rules! construct_eint_twin {
                 Self(lo, hi)
             }
 
+            fn wrapping_mul(self, other: Self) -> Self {
+                let (lo, hi) = self.0.widening_mul(other.0);
+                let hi_0 = self.0.wrapping_mul(other.1);
+                let hi_1 = self.1.wrapping_mul(other.0);
+                let hi = hi.wrapping_add(hi_0).wrapping_add(hi_1);
+                Self(lo, hi)
+            }
+
             fn wrapping_sub(self, other: Self) -> Self {
                 let (lo, borrow) = self.0.overflowing_sub(other.0);
                 let hi = self.1.wrapping_sub(other.1).wrapping_sub(<$half>::from(borrow));
@@ -1282,14 +1288,6 @@ macro_rules! construct_eint_twin {
                     }
                 }
                 (r, false)
-            }
-
-            fn wrapping_mul(self, other: Self) -> Self {
-                let (lo, hi) = self.0.widening_mul(other.0);
-                let hi = hi
-                    .wrapping_add(self.0.wrapping_mul(other.1))
-                    .wrapping_add(self.1.wrapping_mul(other.0));
-                Self(lo, hi)
             }
 
             fn wrapping_div(self, other: Self) -> Self {

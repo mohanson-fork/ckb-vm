@@ -3997,10 +3997,10 @@ pub fn execute_instruction<Mac: Machine>(
             v_vx_loop_s!(inst, machine, Eint::wrapping_sub);
         }
         insts::OP_VRSUB_VX => {
-            v_vx_loop_s!(inst, machine, Eint::wrapping_rsub);
+            v_vx_loop_s!(inst, machine, alu::rsub);
         }
         insts::OP_VRSUB_VI => {
-            v_vi_loop_s!(inst, machine, Eint::wrapping_rsub);
+            v_vi_loop_s!(inst, machine, alu::rsub);
         }
         insts::OP_VMUL_VV => {
             v_vv_loop_s!(inst, machine, Eint::wrapping_mul);

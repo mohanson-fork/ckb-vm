@@ -259,21 +259,6 @@ pub trait Eint:
     /// Wrapping (modular) remainder signed.
     fn wrapping_rem_s(self, other: Self) -> Self;
 
-    /// Shift-left with element.
-    fn wrapping_shl_e(self, other: Self) -> Self {
-        self.wrapping_shl(other.u32())
-    }
-
-    /// Shift-right with element.
-    fn wrapping_shr_e(self, other: Self) -> Self {
-        self.wrapping_shr(other.u32())
-    }
-
-    /// Sign shift-right with element.
-    fn wrapping_sra_e(self, other: Self) -> Self {
-        self.wrapping_sra(other.u32())
-    }
-
     /// Calculates self + rhs + carry without the ability to overflow.
     fn carrying_add(self, other: Self, carry: bool) -> (Self, bool) {
         let (r, carry0) = self.overflowing_add_u(other);

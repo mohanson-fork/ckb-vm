@@ -239,3 +239,15 @@ pub fn merge<T: Eint>(lhs: T, rhs: T, mask: bool) -> T {
 pub fn rsub<T: Eint>(lhs: T, rhs: T) -> T {
     rhs.wrapping_sub(lhs)
 }
+
+pub fn sll<T: Eint>(lhs: T, rhs: T) -> T {
+    lhs.wrapping_shl(rhs.u32())
+}
+
+pub fn srl<T: Eint>(lhs: T, rhs: T) -> T {
+    lhs.wrapping_shr(rhs.u32())
+}
+
+pub fn sra<T: Eint>(lhs: T, rhs: T) -> T {
+    lhs.wrapping_sra(rhs.u32())
+}

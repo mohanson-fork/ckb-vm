@@ -76,6 +76,8 @@ pub trait Eint:
 
     fn is_negative(self) -> bool;
 
+    fn is_positive(self) -> bool;
+
     fn overflowing_add_s(self, other: Self) -> (Self, bool);
 
     fn overflowing_add_u(self, other: Self) -> (Self, bool);
@@ -175,9 +177,6 @@ pub trait Eint:
     fn hi_zext(self) -> Self {
         self >> Self::BITS / 2
     }
-
-    /// Returns true if self is positive and false if the number is zero or negative.
-    fn is_positive(self) -> bool;
 
     /// Read a native endian integer value from its representation as a byte slice in little endian.
     fn read(b: &[u8]) -> Self;
@@ -581,6 +580,10 @@ macro_rules! construct_eint_wrap {
                 (self.0 as $sint).is_negative()
             }
 
+            fn is_positive(self) -> bool {
+                (self.0 as $sint).is_positive()
+            }
+
             fn overflowing_add_s(self, other: Self) -> (Self, bool) {
                 let (r, carry) = (self.0 as $sint).overflowing_add(other.0 as $sint);
                 (Self(r as $uint), carry)
@@ -658,10 +661,6 @@ macro_rules! construct_eint_wrap {
 
             fn u64(self) -> u64 {
                 self.0 as u64
-            }
-
-            fn is_positive(self) -> bool {
-                (self.0 as $sint).is_positive()
             }
 
             fn read(b: &[u8]) -> Self {
@@ -1030,6 +1029,10 @@ macro_rules! construct_eint_twin {
                 self != <$name>::MIN_U && self.wrapping_shr(Self::BITS - 1) == <$name>::ONE
             }
 
+            fn is_positive(self) -> bool {
+                self != <$name>::MIN_U && self.wrapping_shr(Self::BITS - 1) == <$name>::MIN_U
+            }
+
             fn overflowing_add_s(self, other: Self) -> (Self, bool) {
                 let r = self.wrapping_add(other);
                 if self.is_negative() == other.is_negative() {
@@ -1151,10 +1154,6 @@ macro_rules! construct_eint_twin {
 
             fn hi_zext(self) -> Self {
                 Self::from(self.1)
-            }
-
-            fn is_positive(self) -> bool {
-                self != <$name>::MIN_U && self.wrapping_shr(Self::BITS - 1) == <$name>::MIN_U
             }
 
             fn read(b: &[u8]) -> Self {

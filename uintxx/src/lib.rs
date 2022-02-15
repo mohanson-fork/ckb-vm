@@ -795,14 +795,13 @@ macro_rules! construct_eint_twin_from_sint {
     ($name:ident, $half:ty, $from:ty) => {
         impl std::convert::From<$from> for $name {
             fn from(small: $from) -> Self {
-                Self(
-                    <$half>::from(small),
-                    if small >= 0 {
-                        <$half>::MIN_U
-                    } else {
-                        <$half>::MAX_U
-                    },
-                )
+                let lo = <$half>::from(small);
+                let hi = if small >= 0 {
+                    <$half>::MIN_U
+                } else {
+                    <$half>::MAX_U
+                };
+                Self(lo, hi)
             }
         }
     };

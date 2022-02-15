@@ -49,14 +49,17 @@ pub trait Eint:
     const ONE: Self;
     const ZERO: Self;
 
+    /// Returns (self + rhs) >> 1.
     fn average_add_s(self, other: Self) -> Self {
         (self & other).wrapping_add((self ^ other).wrapping_sra(1))
     }
 
+    /// Returns (self + rhs) >> 1.
     fn average_add_u(self, other: Self) -> Self {
         (self & other).wrapping_add((self ^ other).wrapping_shr(1))
     }
 
+    /// Returns (self - rhs) >> 1.
     fn average_sub_s(self, other: Self) -> Self {
         let (lo, borrow) = self.overflowing_sub_u(other);
         let hi_0 = if !self.is_negative() { Self::MIN_U } else { Self::MAX_U };
@@ -65,6 +68,7 @@ pub trait Eint:
         lo.wrapping_shr(1) | hi.wrapping_shl(1).wrapping_shl(Self::BITS - 2)
     }
 
+    /// Returns (self - rhs) >> 1.
     fn average_sub_u(self, other: Self) -> Self {
         let (lo, borrow) = self.overflowing_sub_u(other);
         if borrow {
@@ -74,18 +78,25 @@ pub trait Eint:
         }
     }
 
+    /// Returns true if highest bit is set.
     fn is_negative(self) -> bool;
 
+    /// Returns true if highest bit is not set.
     fn is_positive(self) -> bool;
 
+    /// Calculates self + rhs.
     fn overflowing_add_s(self, other: Self) -> (Self, bool);
 
+    /// Calculates self + rhs.
     fn overflowing_add_u(self, other: Self) -> (Self, bool);
 
+    /// Calculates self - rhs.
     fn overflowing_sub_s(self, other: Self) -> (Self, bool);
 
+    /// Calculates self - rhs.
     fn overflowing_sub_u(self, other: Self) -> (Self, bool);
 
+    /// Saturating integer addition. Computes self + rhs, saturating at the numeric bounds instead of overflowing.
     fn saturating_add_s(self, other: Self) -> (Self, bool) {
         let r = self.wrapping_add(other);
         if !(self ^ other).is_negative() {
@@ -97,6 +108,7 @@ pub trait Eint:
         (r, false)
     }
 
+    /// Saturating integer addition. Computes self + rhs, saturating at the numeric bounds instead of overflowing.
     fn saturating_add_u(self, other: Self) -> (Self, bool) {
         let (r, overflow) = self.overflowing_add_u(other);
         if overflow {
@@ -106,6 +118,7 @@ pub trait Eint:
         }
     }
 
+    /// Saturating integer subtraction. Computes self - rhs, saturating at the numeric bounds instead of overflowing.
     fn saturating_sub_s(self, other: Self) -> (Self, bool) {
         let r = self.wrapping_sub(other);
         if (self ^ other).is_negative() {
@@ -117,6 +130,7 @@ pub trait Eint:
         (r, false)
     }
 
+    /// Saturating integer subtraction. Computes self - rhs, saturating at the numeric bounds instead of overflowing.
     fn saturating_sub_u(self, other: Self) -> (Self, bool) {
         if self > other {
             (self.wrapping_sub(other), false)
@@ -125,15 +139,27 @@ pub trait Eint:
         }
     }
 
+    /// Wrapping (modular) addition. Computes self + rhs, wrapping around at the boundary of the type.
     fn wrapping_add(self, other: Self) -> Self;
 
+    /// Wrapping (modular) multiplication. Computes self * rhs, wrapping around at the boundary of the type.
     fn wrapping_mul(self, other: Self) -> Self;
 
+    /// Panic-free bitwise shift-left; yields self << mask(rhs), where mask removes any high-order bits of rhs that
+    /// would cause the shift to exceed the bitwidth of the type.
     fn wrapping_shl(self, other: u32) -> Self;
 
+    /// Panic-free bitwise shift-right; yields self >> mask(rhs), where mask removes any high-order bits of rhs that
+    /// would cause the shift to exceed the bitwidth of the type.
     fn wrapping_shr(self, other: u32) -> Self;
 
+    /// Panic-free bitwise sign shift-right.
+    fn wrapping_sra(self, other: u32) -> Self;
+
+    /// Wrapping (modular) subtraction. Computes self - rhs, wrapping around at the boundary of the type.
     fn wrapping_sub(self, other: Self) -> Self;
+
+    /// ================================================================================================================
 
     /// For integer operations, the scalar can be taken from the scalar x register specified by rs1. If XLEN>SEW, the
     /// least-significant SEW bits of the x register are used, unless otherwise specified. If XLEN<SEW, the value from
@@ -242,9 +268,6 @@ pub trait Eint:
     fn wrapping_shr_e(self, other: Self) -> Self {
         self.wrapping_shr(other.u32())
     }
-
-    /// Panic-free bitwise sign shift-right.
-    fn wrapping_sra(self, other: u32) -> Self;
 
     /// Sign shift-right with element.
     fn wrapping_sra_e(self, other: Self) -> Self {

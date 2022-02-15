@@ -100,7 +100,7 @@ fn test_wrapping_rem() {
         let lhs = case[0];
         let rhs = case[1];
         let e = case[2];
-        let r = lhs.wrapping_rem(rhs);
+        let r = lhs.wrapping_rem_u(rhs);
         assert_eq!(r, e);
     }
 }

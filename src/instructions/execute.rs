@@ -4039,10 +4039,10 @@ pub fn execute_instruction<Mac: Machine>(
             v_vx_loop_s!(inst, machine, Eint::wrapping_div_s);
         }
         insts::OP_VREMU_VV => {
-            v_vv_loop_u!(inst, machine, Eint::wrapping_rem);
+            v_vv_loop_u!(inst, machine, Eint::wrapping_rem_u);
         }
         insts::OP_VREMU_VX => {
-            v_vx_loop_u!(inst, machine, Eint::wrapping_rem);
+            v_vx_loop_u!(inst, machine, Eint::wrapping_rem_u);
         }
         insts::OP_VREM_VV => {
             v_vv_loop_s!(inst, machine, Eint::wrapping_rem_s);

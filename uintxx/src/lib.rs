@@ -254,6 +254,15 @@ pub trait Eint:
     /// Wrapping (modular) multiplication. Computes self * rhs, wrapping around at the boundary of the type.
     fn wrapping_mul(self, other: Self) -> Self;
 
+    /// Wrapping (modular) remainder signed.
+    /// 1) x % 0 = x
+    /// 2) MIN_S % -1 = 0
+    fn wrapping_rem_s(self, other: Self) -> Self;
+
+    /// Wrapping (modular) remainder.
+    /// 1) x % 0 = x
+    fn wrapping_rem_u(self, other: Self) -> Self;
+
     /// Panic-free bitwise shift-left; yields self << mask(rhs), where mask removes any high-order bits of rhs that
     /// would cause the shift to exceed the bitwidth of the type.
     fn wrapping_shl(self, other: u32) -> Self;
@@ -319,21 +328,7 @@ pub trait Eint:
     ///
     /// Returns a tuple of the divisor along with a boolean indicating whether an arithmetic overflow would occur. Note
     /// that for unsigned integers overflow never occurs, so the second value is always false.
-    fn overflowing_div(self, other: Self) -> (Self, bool);
-
-    /// Calculates the divisor when self is divided by rhs.
-    ///
-    /// Returns a tuple of the divisor along with a boolean indicating whether an arithmetic overflow would occur. Note
-    /// that for unsigned integers overflow never occurs, so the second value is always false.
     fn overflowing_rem(self, other: Self) -> (Self, bool);
-
-    /// Wrapping (modular) remainder. Computes self % rhs. Wrapped remainder calculation on unsigned types is just the
-    /// regular remainder calculation. There’s no way wrapping could ever happen. This function exists, so that all
-    /// operations are accounted for in the wrapping operations.
-    fn wrapping_rem(self, other: Self) -> Self;
-
-    /// Wrapping (modular) remainder signed.
-    fn wrapping_rem_s(self, other: Self) -> Self;
 }
 
 #[macro_export]
@@ -649,12 +644,34 @@ macro_rules! construct_eint_wrap {
                 Self(self.0.wrapping_mul(other.0))
             }
 
+            fn wrapping_rem_s(self, other: Self) -> Self {
+                if other.0 == 0 {
+                    self
+                } else if self.0 == 1 << (Self::BITS - 1) && other == Self::MAX_U {
+                    Self::MIN_U
+                } else {
+                    Self((self.0 as $sint).wrapping_rem(other.0 as $sint) as $uint)
+                }
+            }
+
+            fn wrapping_rem_u(self, other: Self) -> Self {
+                if other.0 == 0 {
+                    self
+                } else {
+                    Self(self.0.wrapping_rem(other.0))
+                }
+            }
+
             fn wrapping_shl(self, other: u32) -> Self {
                 Self(self.0.wrapping_shl(other))
             }
 
             fn wrapping_shr(self, other: u32) -> Self {
                 Self(self.0.wrapping_shr(other))
+            }
+
+            fn wrapping_sra(self, other: u32) -> Self {
+                Self((self.0 as $sint).wrapping_shr(other) as $uint)
             }
 
             fn wrapping_sub(self, other: Self) -> Self {
@@ -720,34 +737,8 @@ macro_rules! construct_eint_wrap {
                 (self.0 as $sint).cmp(&(other.0 as $sint))
             }
 
-            fn overflowing_div(self, other: Self) -> (Self, bool) {
-                (self.wrapping_div_u(other), false)
-            }
-
             fn overflowing_rem(self, other: Self) -> (Self, bool) {
-                (self.wrapping_rem(other), false)
-            }
-
-            fn wrapping_rem(self, other: Self) -> Self {
-                if other.0 == 0 {
-                    self
-                } else {
-                    Self(self.0.wrapping_rem(other.0))
-                }
-            }
-
-            fn wrapping_rem_s(self, other: Self) -> Self {
-                if other.0 == 0 {
-                    self
-                } else if self.0 == 1 << (Self::BITS - 1) && other == Self::MAX_U {
-                    Self::MIN_U
-                } else {
-                    Self(self.0.wrapping_rem(other.0))
-                }
-            }
-
-            fn wrapping_sra(self, other: u32) -> Self {
-                Self((self.0 as $sint).wrapping_shr(other) as $uint)
+                (self.wrapping_rem_u(other), false)
             }
         }
 
@@ -993,13 +984,13 @@ macro_rules! construct_eint_twin {
         impl std::ops::Rem for $name {
             type Output = Self;
             fn rem(self, other: Self) -> Self::Output {
-                self.wrapping_rem(other)
+                self.wrapping_rem_u(other)
             }
         }
 
         impl std::ops::RemAssign for $name {
             fn rem_assign(&mut self, other: Self) {
-                *self = self.wrapping_rem(other);
+                *self = self.wrapping_rem_u(other);
             }
         }
 
@@ -1155,6 +1146,26 @@ macro_rules! construct_eint_twin {
                 Self(lo, hi)
             }
 
+            fn wrapping_rem_s(self, other: Self) -> Self {
+                let minus_min = Self::ONE << (Self::BITS - 1);
+                let minus_one = Self::MAX_U;
+                if other == Self::MIN_U {
+                    self
+                } else if self == minus_min && other == minus_one {
+                    Self::MIN_U
+                } else {
+                    self.divs(other).1
+                }
+            }
+
+            fn wrapping_rem_u(self, other: Self) -> Self {
+                if other == Self::MIN_U {
+                    self
+                } else {
+                    self.div(other).1
+                }
+            }
+
             fn wrapping_shl(self, other: u32) -> Self {
                 let shamt = other % Self::BITS;
                 if shamt < Self::BITS / 2 {
@@ -1181,6 +1192,17 @@ macro_rules! construct_eint_twin {
                     let hi = <$half>::MIN_U;
                     Self(lo, hi)
                 }
+            }
+
+            fn wrapping_sra(self, other: u32) -> Self {
+                let shamt = other % Self::BITS;
+                let hi = if self.is_negative() && shamt != 0 {
+                    Self::MAX_U << (Self::BITS - shamt)
+                } else {
+                    Self::MIN_U
+                };
+                let lo = self.wrapping_shr(shamt);
+                hi | lo
             }
 
             fn wrapping_sub(self, other: Self) -> Self {
@@ -1253,43 +1275,8 @@ macro_rules! construct_eint_twin {
                 }
             }
 
-            fn overflowing_div(self, other: Self) -> (Self, bool) {
-                (self.wrapping_div_u(other), false)
-            }
-
             fn overflowing_rem(self, other: Self) -> (Self, bool) {
-                (self.wrapping_rem(other), false)
-            }
-
-            fn wrapping_rem(self, other: Self) -> Self {
-                if other == Self::MIN_U {
-                    self
-                } else {
-                    self.div(other).1
-                }
-            }
-
-            fn wrapping_rem_s(self, other: Self) -> Self {
-                let minus_min = Self::ONE << (Self::BITS - 1);
-                let minus_one = Self::MAX_U;
-                if other == Self::MIN_U {
-                    self
-                } else if self == minus_min && other == minus_one {
-                    Self::MIN_U
-                } else {
-                    self.divs(other).1
-                }
-            }
-
-            fn wrapping_sra(self, other: u32) -> Self {
-                let shamt = other % Self::BITS;
-                let hi = if self.is_negative() && shamt != 0 {
-                    Self::MAX_U << (Self::BITS - shamt)
-                } else {
-                    Self::MIN_U
-                };
-                let lo = self.wrapping_shr(shamt);
-                hi | lo
+                (self.wrapping_rem_u(other), false)
             }
         }
 

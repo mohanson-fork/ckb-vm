@@ -301,6 +301,30 @@ proptest! {
     }
 
     #[test]
+    fn test_wrapping_rem_s(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
+        let r0 = Eint::wrapping_rem_s(E64::from(x), E64::from(y));
+        let r1 = Eint::wrapping_rem_s(T64::recv(x), T64::recv(y));
+        let r2 = if y == 0 {
+            x
+        } else if x as i64 == i64::MIN && y as i64 == -1 {
+            0
+        } else {
+            (x as i64 % y as i64) as u64
+        };
+        assert_eq!(r0, r1.into());
+        assert_eq!(r0, E64(r2));
+    }
+
+    #[test]
+    fn test_wrapping_rem_u(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
+        let r0 = Eint::wrapping_rem_u(E64::from(x), E64::from(y));
+        let r1 = Eint::wrapping_rem_u(T64::recv(x), T64::recv(y));
+        let r2 = if y == 0 { 0 } else { x % y };
+        assert_eq!(r0, r1.into());
+        assert_eq!(r0, E64(r2));
+    }
+
+    #[test]
     fn test_wrapping_shl(x in u64::MIN..=u64::MAX, y in u32::MIN..=u32::MAX) {
         let r0 = E64::from(x).wrapping_shl(y);
         let r1 = T64::recv(x).wrapping_shl(y);

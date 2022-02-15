@@ -4247,10 +4247,10 @@ pub fn execute_instruction<Mac: Machine>(
             v_vx_loop_s!(inst, machine, alu::ssub);
         }
         insts::OP_VWADDU_VV => {
-            w_vv_loop_u!(inst, machine, Eint::widening_add);
+            w_vv_loop_u!(inst, machine, Eint::widening_add_u);
         }
         insts::OP_VWADDU_VX => {
-            w_vx_loop_u!(inst, machine, Eint::widening_add);
+            w_vx_loop_u!(inst, machine, Eint::widening_add_u);
         }
         insts::OP_VWADDU_WV => {
             w_wv_loop_u!(inst, machine, Eint::wrapping_add);
@@ -4271,13 +4271,13 @@ pub fn execute_instruction<Mac: Machine>(
             w_wv_loop_s!(inst, machine, Eint::wrapping_add);
         }
         insts::OP_VWSUBU_VV => {
-            w_vv_loop_u!(inst, machine, Eint::widening_sub);
+            w_vv_loop_u!(inst, machine, Eint::widening_sub_u);
         }
         insts::OP_VWSUBU_WV => {
             w_wv_loop_u!(inst, machine, Eint::wrapping_sub);
         }
         insts::OP_VWSUBU_VX => {
-            w_vx_loop_u!(inst, machine, Eint::widening_sub);
+            w_vx_loop_u!(inst, machine, Eint::widening_sub_u);
         }
         insts::OP_VWSUB_VV => {
             w_vv_loop_s!(inst, machine, Eint::widening_sub_s);

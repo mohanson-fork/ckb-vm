@@ -148,6 +148,36 @@ pub trait Eint:
         }
     }
 
+    /// Signed widening add.
+    fn widening_add_s(self, other: Self) -> (Self, Self) {
+        let hi_0 = if self.is_negative() { Self::MAX_U } else { Self::MIN_U };
+        let hi_1 = if other.is_negative() { Self::MAX_U } else { Self::MIN_U };
+        let (lo, carry) = self.overflowing_add_u(other);
+        let hi = hi_0.wrapping_add(hi_1).wrapping_add(Self::from(carry));
+        (lo, hi)
+    }
+
+    /// Widening add.
+    fn widening_add_u(self, other: Self) -> (Self, Self) {
+        let (lo, carry) = self.overflowing_add_u(other);
+        (lo, if carry { Self::ONE } else { Self::MIN_U })
+    }
+
+    /// Signed widening substract.
+    fn widening_sub_s(self, other: Self) -> (Self, Self) {
+        let hi_0 = if self.is_negative() { Self::MAX_U } else { Self::MIN_U };
+        let hi_1 = if other.is_negative() { Self::MAX_U } else { Self::MIN_U };
+        let (lo, borrow) = self.overflowing_sub_u(other);
+        let hi = hi_0.wrapping_sub(hi_1).wrapping_sub(Self::from(borrow));
+        (lo, hi)
+    }
+
+    /// Widening substract.
+    fn widening_sub_u(self, other: Self) -> (Self, Self) {
+        let (lo, borrow) = self.overflowing_sub_u(other);
+        (lo, if borrow { Self::MAX_U } else { Self::MIN_U })
+    }
+
     /// Wrapping (modular) addition. Computes self + rhs, wrapping around at the boundary of the type.
     fn wrapping_add(self, other: Self) -> Self;
 
@@ -285,36 +315,6 @@ pub trait Eint:
         let (r, borrow0) = self.overflowing_sub_s(other);
         let (r, borrow1) = r.overflowing_sub_s(if carry { Self::ONE } else { Self::MIN_U });
         (r, borrow0 | borrow1)
-    }
-
-    /// Widening add.
-    fn widening_add(self, other: Self) -> (Self, Self) {
-        let (lo, carry) = self.overflowing_add_u(other);
-        (lo, if carry { Self::ONE } else { Self::MIN_U })
-    }
-
-    /// Signed widening add.
-    fn widening_add_s(self, other: Self) -> (Self, Self) {
-        let hi0 = if self.is_negative() { Self::MAX_U } else { Self::MIN_U };
-        let hi1 = if other.is_negative() { Self::MAX_U } else { Self::MIN_U };
-        let (lo, carry) = self.overflowing_add_u(other);
-        let hi = hi0.wrapping_add(hi1).wrapping_add(Self::from(carry));
-        (lo, hi)
-    }
-
-    /// Widening substract.
-    fn widening_sub(self, other: Self) -> (Self, Self) {
-        let (lo, borrow) = self.overflowing_sub_u(other);
-        (lo, if borrow { Self::MAX_U } else { Self::MIN_U })
-    }
-
-    /// Signed widening substract.
-    fn widening_sub_s(self, other: Self) -> (Self, Self) {
-        let hi0 = if self.is_negative() { Self::MAX_U } else { Self::MIN_U };
-        let hi1 = if other.is_negative() { Self::MAX_U } else { Self::MIN_U };
-        let (lo, borrow) = self.overflowing_sub_u(other);
-        let hi = hi0.wrapping_sub(hi1).wrapping_sub(Self::from(borrow));
-        (lo, hi)
     }
 
     /// Function widening_mul returns the product of x and y: (lo, hi) = x * y

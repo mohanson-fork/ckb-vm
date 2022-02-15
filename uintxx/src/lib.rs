@@ -159,8 +159,7 @@ pub trait Eint:
 
     /// Sign extended.
     fn sext(self, other: u32) -> Self {
-        self.wrapping_shl(Self::BITS - other - 1)
-            .wrapping_sra(Self::BITS - other - 1)
+        self.wrapping_shl(Self::BITS - other - 1).wrapping_sra(Self::BITS - other - 1)
     }
 
     /// Signed widening add.
@@ -215,8 +214,7 @@ pub trait Eint:
 
     /// Zero extended.
     fn zext(self, other: u32) -> Self {
-        self.wrapping_shl(Self::BITS - other - 1)
-            .wrapping_shr(Self::BITS - other - 1)
+        self.wrapping_shl(Self::BITS - other - 1).wrapping_shr(Self::BITS - other - 1)
     }
 
     /// ================================================================================================================
@@ -1193,8 +1191,7 @@ macro_rules! construct_eint_twin {
 
             fn save(&self, b: &mut [u8]) {
                 self.0.save(&mut b[0..Self::BITS as usize >> 4]);
-                self.1
-                    .save(&mut b[Self::BITS as usize >> 4..Self::BITS as usize >> 3]);
+                self.1.save(&mut b[Self::BITS as usize >> 4..Self::BITS as usize >> 3]);
             }
 
             fn save_lo(&self, b: &mut [u8]) {
@@ -1217,9 +1214,7 @@ macro_rules! construct_eint_twin {
                     (_, <$half>::MIN_U) => self.1.overflowing_mul(other.0),
                     (<$half>::MIN_U, _) => other.1.overflowing_mul(self.0),
                     _ => (
-                        self.1
-                            .wrapping_mul(other.0)
-                            .wrapping_add(other.1.wrapping_mul(self.0)),
+                        self.1.wrapping_mul(other.0).wrapping_add(other.1.wrapping_mul(self.0)),
                         true,
                     ),
                 };

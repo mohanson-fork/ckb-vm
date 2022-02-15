@@ -107,6 +107,17 @@ proptest! {
     }
 
     #[test]
+    fn test_overflowing_mul_u(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
+        let (r0, b0) = Eint::overflowing_mul_u(E64::from(x), E64::from(y));
+        let (r1, b1) = Eint::overflowing_mul_u(T64::recv(x), T64::recv(y));
+        let (r2, b2) = x.overflowing_mul(y);
+        assert_eq!(r0, r1.into());
+        assert_eq!(b0, b1);
+        assert_eq!(r0, E64(r2));
+        assert_eq!(b0, b2);
+    }
+
+    #[test]
     fn test_overflowing_sub_s(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
         let (r0, b0) = Eint::overflowing_sub_s(E64::from(x), E64::from(y));
         let (r1, b1) = Eint::overflowing_sub_s(T64::recv(x), T64::recv(y));

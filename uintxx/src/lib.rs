@@ -108,6 +108,9 @@ pub trait Eint:
     /// Calculates self + rhs.
     fn overflowing_add_u(self, other: Self) -> (Self, bool);
 
+    /// Calculates self * rhs.
+    fn overflowing_mul_u(self, other: Self) -> (Self, bool);
+
     /// Calculates self - rhs.
     fn overflowing_sub_s(self, other: Self) -> (Self, bool);
 
@@ -299,12 +302,6 @@ pub trait Eint:
 
     /// Compare signed.
     fn cmp_s(&self, other: &Self) -> std::cmp::Ordering;
-
-    /// Calculates the multiplication of self and other.
-    ///
-    /// Returns a tuple of the multiplication along with a boolean indicating whether an arithmetic overflow would
-    /// occur. If an overflow would have occurred then the wrapped value is returned.
-    fn overflowing_mul(self, other: Self) -> (Self, bool);
 
     /// Calculates the divisor when self is divided by rhs.
     ///
@@ -602,6 +599,11 @@ macro_rules! construct_eint_wrap {
                 (Self(r), carry)
             }
 
+            fn overflowing_mul_u(self, other: Self) -> (Self, bool) {
+                let (r, carry) = self.0.overflowing_mul(other.0);
+                (Self(r), carry)
+            }
+
             fn overflowing_sub_s(self, other: Self) -> (Self, bool) {
                 let (r, borrow) = (self.0 as $sint).overflowing_sub(other.0 as $sint);
                 (Self(r as $uint), borrow)
@@ -689,11 +691,6 @@ macro_rules! construct_eint_wrap {
 
             fn cmp_s(&self, other: &Self) -> std::cmp::Ordering {
                 (self.0 as $sint).cmp(&(other.0 as $sint))
-            }
-
-            fn overflowing_mul(self, other: Self) -> (Self, bool) {
-                let (r, b) = self.0.overflowing_mul(other.0);
-                (Self(r), b)
             }
 
             fn overflowing_div(self, other: Self) -> (Self, bool) {
@@ -1081,6 +1078,21 @@ macro_rules! construct_eint_twin {
                 (Self(lo, hi), hi_carry_1 || hi_carry_2)
             }
 
+            fn overflowing_mul_u(self, other: Self) -> (Self, bool) {
+                let (hi, hi_overflow_mul) = match (self.1, other.1) {
+                    (_, <$half>::MIN_U) => self.1.overflowing_mul_u(other.0),
+                    (<$half>::MIN_U, _) => other.1.overflowing_mul_u(self.0),
+                    _ => (
+                        self.1.wrapping_mul(other.0).wrapping_add(other.1.wrapping_mul(self.0)),
+                        true,
+                    ),
+                };
+                let lo = self.0.widening_mul_u(other.0);
+                let (hi, hi_overflow_add) = lo.1.overflowing_add_u(hi);
+                let lo = Self(lo.0, hi);
+                (lo, hi_overflow_mul || hi_overflow_add)
+            }
+
             fn overflowing_sub_s(self, other: Self) -> (Self, bool) {
                 let r = self.wrapping_sub(other);
                 if self.is_negative() == other.is_negative() {
@@ -1207,22 +1219,6 @@ macro_rules! construct_eint_twin {
                     (true, false) => std::cmp::Ordering::Less,
                     (true, true) => self.cmp(&other),
                 }
-            }
-
-            fn overflowing_mul(self, other: Self) -> (Self, bool) {
-                let (hi, hi_overflow_mul) = match (self.1, other.1) {
-                    (_, <$half>::MIN_U) => self.1.overflowing_mul(other.0),
-                    (<$half>::MIN_U, _) => other.1.overflowing_mul(self.0),
-                    _ => (
-                        self.1.wrapping_mul(other.0).wrapping_add(other.1.wrapping_mul(self.0)),
-                        true,
-                    ),
-                };
-                let lo = self.0.widening_mul_u(other.0);
-                let lo = Self(lo.0, lo.1);
-                let (hi, hi_overflow_add) = lo.1.overflowing_add_u(hi);
-                let lo = Self(lo.0, hi);
-                (lo, hi_overflow_mul || hi_overflow_add)
             }
 
             fn overflowing_div(self, other: Self) -> (Self, bool) {

@@ -4295,10 +4295,10 @@ pub fn execute_instruction<Mac: Machine>(
             w_wx_loop_s!(inst, machine, Eint::wrapping_sub);
         }
         insts::OP_VWMULU_VV => {
-            w_vv_loop_u!(inst, machine, Eint::widening_mul);
+            w_vv_loop_u!(inst, machine, Eint::widening_mul_u);
         }
         insts::OP_VWMULU_VX => {
-            w_vx_loop_u!(inst, machine, Eint::widening_mul);
+            w_vx_loop_u!(inst, machine, Eint::widening_mul_u);
         }
         insts::OP_VWMULSU_VV => {
             w_vv_loop_u!(inst, machine, Eint::widening_mul_su);

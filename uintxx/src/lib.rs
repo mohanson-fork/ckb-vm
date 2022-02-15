@@ -289,34 +289,6 @@ pub trait Eint:
     /// Wrapping (modular) remainder signed.
     fn wrapping_rem_s(self, other: Self) -> Self;
 
-    /// Signed carring add.
-    fn carrying_add_s(self, other: Self, carry: bool) -> (Self, bool) {
-        let (r, carry0) = self.overflowing_add_s(other);
-        let (r, carry1) = r.overflowing_add_s(Self::from(carry));
-        (r, carry0 | carry1)
-    }
-
-    /// Calculates self + rhs + carry without the ability to overflow.
-    fn carrying_add_u(self, other: Self, carry: bool) -> (Self, bool) {
-        let (r, carry0) = self.overflowing_add_u(other);
-        let (r, carry1) = r.overflowing_add_u(Self::from(carry));
-        (r, carry0 | carry1)
-    }
-
-    /// Signed carrying sub.
-    fn carrying_sub_s(self, other: Self, carry: bool) -> (Self, bool) {
-        let (r, borrow0) = self.overflowing_sub_s(other);
-        let (r, borrow1) = r.overflowing_sub_s(Self::from(carry));
-        (r, borrow0 | borrow1)
-    }
-
-    /// Calculates self - rhs - borrow without the ability to overflow.
-    fn carrying_sub_u(self, other: Self, carry: bool) -> (Self, bool) {
-        let (r, borrow0) = self.overflowing_sub_u(other);
-        let (r, borrow1) = r.overflowing_sub_u(Self::from(carry));
-        (r, borrow0 | borrow1)
-    }
-
     /// Function widening_mul returns the product of x and y: (lo, hi) = x * y
     /// with the product bits' upper half returned in hi and the lower half returned in lo.
     ///

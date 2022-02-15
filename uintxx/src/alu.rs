@@ -152,26 +152,26 @@ pub fn msbc<T: Eint>(lhs: T, rhs: T) -> bool {
 
 /// Calculates self + rhs + carry without the ability to overflow.
 pub fn adc<T: Eint>(lhs: T, rhs: T, carry: bool) -> T {
-    let (r, _) = lhs.carrying_add_s(rhs, carry);
-    r
+    lhs.wrapping_add(rhs).wrapping_add(T::from(carry))
 }
 
 /// Calculates self - rhs - borrow without the ability to overflow.
 pub fn sbc<T: Eint>(lhs: T, rhs: T, borrow: bool) -> T {
-    let (r, _) = lhs.carrying_sub_s(rhs, borrow);
-    r
+    lhs.wrapping_sub(rhs).wrapping_sub(T::from(borrow))
 }
 
 /// Calculates carry_out(self + rhs + carry) without the ability to overflow.
 pub fn madcm<T: Eint>(lhs: T, rhs: T, carry: bool) -> bool {
-    let (_, r) = lhs.carrying_add_s(rhs, carry);
-    r
+    let (r, carry_0) = lhs.overflowing_add_s(rhs);
+    let (_, carry_1) = r.overflowing_add_s(T::from(carry));
+    carry_0 | carry_1
 }
 
 /// Calculates borrow_out(self - rhs - borrow) without the ability to overflow.
 pub fn msbcm<T: Eint>(lhs: T, rhs: T, borrow: bool) -> bool {
-    let (_, r) = lhs.carrying_sub_s(rhs, borrow);
-    r
+    let (r, carry_0) = lhs.overflowing_sub_s(rhs);
+    let (_, carry_1) = r.overflowing_sub_s(T::from(borrow));
+    carry_0 | carry_1
 }
 
 /// Integer multiply-add, overwrite addend
@@ -243,7 +243,6 @@ pub fn rsub<T: Eint>(lhs: T, rhs: T) -> T {
 pub fn sll<T: Eint>(lhs: T, rhs: T) -> T {
     lhs.wrapping_shl(rhs.u32())
 }
-
 
 pub fn srl<T: Eint>(lhs: T, rhs: T) -> T {
     lhs.wrapping_shr(rhs.u32())

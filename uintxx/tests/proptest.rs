@@ -265,6 +265,15 @@ proptest! {
     }
 
     #[test]
+    fn test_wrapping_div_u(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
+        let r0 = Eint::wrapping_div_u(E64::from(x), E64::from(y));
+        let r1 = Eint::wrapping_div_u(T64::recv(x), T64::recv(y));
+        let r2 = if y == 0 { u64::MAX } else { x / y };
+        assert_eq!(r0, r1.into());
+        assert_eq!(r0, E64(r2));
+    }
+
+    #[test]
     fn test_wrapping_mul(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
         let r0 = Eint::wrapping_mul(E64::from(x), E64::from(y));
         let r1 = Eint::wrapping_mul(T64::recv(x), T64::recv(y));

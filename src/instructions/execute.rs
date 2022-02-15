@@ -4027,10 +4027,10 @@ pub fn execute_instruction<Mac: Machine>(
             v_vx_loop_u!(inst, machine, alu::mulhsu);
         }
         insts::OP_VDIVU_VV => {
-            v_vv_loop_u!(inst, machine, Eint::wrapping_div);
+            v_vv_loop_u!(inst, machine, Eint::wrapping_div_u);
         }
         insts::OP_VDIVU_VX => {
-            v_vx_loop_u!(inst, machine, Eint::wrapping_div);
+            v_vx_loop_u!(inst, machine, Eint::wrapping_div_u);
         }
         insts::OP_VDIV_VV => {
             v_vv_loop_s!(inst, machine, Eint::wrapping_div_s);

@@ -20,7 +20,7 @@ fn test_wrapping_div() {
         let lhs = case[0];
         let rhs = case[1];
         let e = case[2];
-        let r = lhs.wrapping_div(rhs);
+        let r = lhs.wrapping_div_u(rhs);
         assert_eq!(r, e);
     }
 }

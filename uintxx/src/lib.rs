@@ -242,6 +242,9 @@ pub trait Eint:
     /// Wrapping (modular) addition. Computes self + rhs, wrapping around at the boundary of the type.
     fn wrapping_add(self, other: Self) -> Self;
 
+    /// Wrapping (modular) division. Computes self / rhs. If rhs is 0, returns MAX_U.
+    fn wrapping_div_u(self, other: Self) -> Self;
+
     /// Wrapping (modular) multiplication. Computes self * rhs, wrapping around at the boundary of the type.
     fn wrapping_mul(self, other: Self) -> Self;
 
@@ -317,11 +320,6 @@ pub trait Eint:
     /// Returns a tuple of the divisor along with a boolean indicating whether an arithmetic overflow would occur. Note
     /// that for unsigned integers overflow never occurs, so the second value is always false.
     fn overflowing_rem(self, other: Self) -> (Self, bool);
-
-    /// Wrapping (modular) division. Computes self / rhs. Wrapped division on unsigned types is just normal division.
-    /// There’s no way wrapping could ever happen. This function exists, so that all operations are accounted for in
-    /// the wrapping operations.
-    fn wrapping_div(self, other: Self) -> Self;
 
     /// Wrapping (modular) division signed.
     fn wrapping_div_s(self, other: Self) -> Self;
@@ -626,6 +624,14 @@ macro_rules! construct_eint_wrap {
                 Self(self.0.wrapping_add(other.0))
             }
 
+            fn wrapping_div_u(self, other: Self) -> Self {
+                if other.0 == 0 {
+                    Self::MAX_U
+                } else {
+                    Self(self.0.wrapping_div(other.0))
+                }
+            }
+
             fn wrapping_mul(self, other: Self) -> Self {
                 Self(self.0.wrapping_mul(other.0))
             }
@@ -702,19 +708,11 @@ macro_rules! construct_eint_wrap {
             }
 
             fn overflowing_div(self, other: Self) -> (Self, bool) {
-                (self.wrapping_div(other), false)
+                (self.wrapping_div_u(other), false)
             }
 
             fn overflowing_rem(self, other: Self) -> (Self, bool) {
                 (self.wrapping_rem(other), false)
-            }
-
-            fn wrapping_div(self, other: Self) -> Self {
-                if other.0 == 0 {
-                    Self::MAX_U
-                } else {
-                    Self(self.0.wrapping_div(other.0))
-                }
             }
 
             fn wrapping_div_s(self, other: Self) -> Self {
@@ -979,13 +977,13 @@ macro_rules! construct_eint_twin {
         impl std::ops::Div for $name {
             type Output = Self;
             fn div(self, other: Self) -> Self::Output {
-                self.wrapping_div(other)
+                self.wrapping_div_u(other)
             }
         }
 
         impl std::ops::DivAssign for $name {
             fn div_assign(&mut self, other: Self) {
-                *self = self.wrapping_div(other)
+                *self = self.wrapping_div_u(other)
             }
         }
 
@@ -1128,6 +1126,14 @@ macro_rules! construct_eint_twin {
                 Self(lo, hi)
             }
 
+            fn wrapping_div_u(self, other: Self) -> Self {
+                if other == Self::MIN_U {
+                    Self::MAX_U
+                } else {
+                    self.div(other).0
+                }
+            }
+
             fn wrapping_mul(self, other: Self) -> Self {
                 let (lo, hi) = self.0.widening_mul_u(other.0);
                 let hi_0 = self.0.wrapping_mul(other.1);
@@ -1235,19 +1241,11 @@ macro_rules! construct_eint_twin {
             }
 
             fn overflowing_div(self, other: Self) -> (Self, bool) {
-                (self.wrapping_div(other), false)
+                (self.wrapping_div_u(other), false)
             }
 
             fn overflowing_rem(self, other: Self) -> (Self, bool) {
                 (self.wrapping_rem(other), false)
-            }
-
-            fn wrapping_div(self, other: Self) -> Self {
-                if other == Self::MIN_U {
-                    Self::MAX_U
-                } else {
-                    self.div(other).0
-                }
             }
 
             fn wrapping_div_s(self, other: Self) -> Self {

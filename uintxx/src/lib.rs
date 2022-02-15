@@ -87,11 +87,17 @@ pub trait Eint:
     /// Returns the number of trailing zeros in the binary representation of self.
     fn ctz(self) -> u32;
 
+    /// Returns the higher part.
+    fn hi(self) -> Self;
+
     /// Returns true if highest bit is set.
     fn is_negative(self) -> bool;
 
     /// Returns true if highest bit is not set.
     fn is_positive(self) -> bool;
+
+    /// Returns the lower part.
+    fn lo(self) -> Self;
 
     /// Calculates self + rhs.
     fn overflowing_add_s(self, other: Self) -> (Self, bool);
@@ -148,6 +154,12 @@ pub trait Eint:
         }
     }
 
+    /// Sign extended.
+    fn sext(self, other: u32) -> Self {
+        self.wrapping_shl(Self::BITS - other - 1)
+            .wrapping_sra(Self::BITS - other - 1)
+    }
+
     /// Signed widening add.
     fn widening_add_s(self, other: Self) -> (Self, Self) {
         let hi_0 = if self.is_negative() { Self::MAX_U } else { Self::MIN_U };
@@ -198,6 +210,12 @@ pub trait Eint:
     /// Wrapping (modular) subtraction. Computes self - rhs, wrapping around at the boundary of the type.
     fn wrapping_sub(self, other: Self) -> Self;
 
+    /// Zero extended.
+    fn zext(self, other: u32) -> Self {
+        self.wrapping_shl(Self::BITS - other - 1)
+            .wrapping_shr(Self::BITS - other - 1)
+    }
+
     /// ================================================================================================================
 
     /// For integer operations, the scalar can be taken from the scalar x register specified by rs1. If XLEN>SEW, the
@@ -228,19 +246,9 @@ pub trait Eint:
     /// Returns the lower 64 bits.
     fn u64(self) -> u64;
 
-    /// Returns the lower part with same type.
-    fn lo_zext(self) -> Self {
-        self.wrapping_shl(Self::BITS / 2).wrapping_shr(Self::BITS / 2)
-    }
-
     /// Returns the lower part with sign extented.
     fn lo_sext(self) -> Self {
         self.wrapping_shl(Self::BITS / 2).wrapping_sra(Self::BITS / 2)
-    }
-
-    /// Returns the higher partr with same type.
-    fn hi_zext(self) -> Self {
-        self >> Self::BITS / 2
     }
 
     /// Read a native endian integer value from its representation as a byte slice in little endian.
@@ -294,16 +302,16 @@ pub trait Eint:
     ///
     /// Inspired by https://pkg.go.dev/math/bits@go1.17.2#Mul64
     fn widening_mul(self, other: Self) -> (Self, Self) {
-        let x0 = self.lo_zext();
-        let x1 = self.hi_zext();
-        let y0 = other.lo_zext();
-        let y1 = other.hi_zext();
+        let x0 = self.lo();
+        let x1 = self.hi();
+        let y0 = other.lo();
+        let y1 = other.hi();
         let w0 = x0 * y0;
-        let t = x1 * y0 + w0.hi_zext();
-        let w1 = t.lo_zext();
-        let w2 = t.hi_zext();
+        let t = x1 * y0 + w0.hi();
+        let w1 = t.lo();
+        let w2 = t.hi();
         let w1 = w1 + x0 * y1;
-        let hi = x1 * y1 + w2 + w1.hi_zext();
+        let hi = x1 * y1 + w2 + w1.hi();
         let lo = self.wrapping_mul(other);
         (lo, hi)
     }
@@ -568,12 +576,20 @@ macro_rules! construct_eint_wrap {
                 self.0.trailing_zeros()
             }
 
+            fn hi(self) -> Self {
+                self >> (Self::BITS >> 1)
+            }
+
             fn is_negative(self) -> bool {
                 (self.0 as $sint).is_negative()
             }
 
             fn is_positive(self) -> bool {
                 (self.0 as $sint).is_positive()
+            }
+
+            fn lo(self) -> Self {
+                self & (Self::MAX_U >> (Self::BITS >> 1))
             }
 
             fn overflowing_add_s(self, other: Self) -> (Self, bool) {
@@ -1024,12 +1040,20 @@ macro_rules! construct_eint_twin {
                 }
             }
 
+            fn hi(self) -> Self {
+                Self(self.1, <$half>::MIN_U)
+            }
+
             fn is_negative(self) -> bool {
                 self != <$name>::MIN_U && self.wrapping_shr(Self::BITS - 1) == <$name>::ONE
             }
 
             fn is_positive(self) -> bool {
                 self != <$name>::MIN_U && self.wrapping_shr(Self::BITS - 1) == <$name>::MIN_U
+            }
+
+            fn lo(self) -> Self {
+                Self(self.0, <$half>::MIN_U)
             }
 
             fn overflowing_add_s(self, other: Self) -> (Self, bool) {
@@ -1145,14 +1169,6 @@ macro_rules! construct_eint_twin {
 
             fn u64(self) -> u64 {
                 self.0.u64()
-            }
-
-            fn lo_zext(self) -> Self {
-                Self::from(self.0)
-            }
-
-            fn hi_zext(self) -> Self {
-                Self::from(self.1)
             }
 
             fn read(b: &[u8]) -> Self {

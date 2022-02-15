@@ -242,8 +242,14 @@ pub trait Eint:
     /// Wrapping (modular) addition. Computes self + rhs, wrapping around at the boundary of the type.
     fn wrapping_add(self, other: Self) -> Self;
 
-    /// Wrapping (modular) division. Computes self / rhs. If rhs is 0, returns MAX_U.
+    /// Wrapping (modular) division. Computes self / rhs.
+    /// 1) x / 0 = MAX_U
     fn wrapping_div_u(self, other: Self) -> Self;
+
+    /// Wrapping (modular) division signed.
+    /// 1) x / 0 = -1.
+    /// 2) MIN_S / -1 = MIN_S
+    fn wrapping_div_s(self, other: Self) -> Self;
 
     /// Wrapping (modular) multiplication. Computes self * rhs, wrapping around at the boundary of the type.
     fn wrapping_mul(self, other: Self) -> Self;
@@ -320,9 +326,6 @@ pub trait Eint:
     /// Returns a tuple of the divisor along with a boolean indicating whether an arithmetic overflow would occur. Note
     /// that for unsigned integers overflow never occurs, so the second value is always false.
     fn overflowing_rem(self, other: Self) -> (Self, bool);
-
-    /// Wrapping (modular) division signed.
-    fn wrapping_div_s(self, other: Self) -> Self;
 
     /// Wrapping (modular) remainder. Computes self % rhs. Wrapped remainder calculation on unsigned types is just the
     /// regular remainder calculation. There’s no way wrapping could ever happen. This function exists, so that all
@@ -624,6 +627,16 @@ macro_rules! construct_eint_wrap {
                 Self(self.0.wrapping_add(other.0))
             }
 
+            fn wrapping_div_s(self, other: Self) -> Self {
+                if other.0 == 0 {
+                    Self::MAX_U
+                } else if self == Self::MIN_S && other == Self::MAX_U {
+                    Self::MIN_S
+                } else {
+                    Self((self.0 as $sint).wrapping_div(other.0 as $sint) as $uint)
+                }
+            }
+
             fn wrapping_div_u(self, other: Self) -> Self {
                 if other.0 == 0 {
                     Self::MAX_U
@@ -713,16 +726,6 @@ macro_rules! construct_eint_wrap {
 
             fn overflowing_rem(self, other: Self) -> (Self, bool) {
                 (self.wrapping_rem(other), false)
-            }
-
-            fn wrapping_div_s(self, other: Self) -> Self {
-                if other.0 == 0 {
-                    Self::MAX_U
-                } else if self.0 == 1 << (Self::BITS - 1) && other == Self::MAX_U {
-                    Self::ONE << (Self::BITS - 1)
-                } else {
-                    Self(self.0.wrapping_div(other.0))
-                }
             }
 
             fn wrapping_rem(self, other: Self) -> Self {
@@ -1126,6 +1129,16 @@ macro_rules! construct_eint_twin {
                 Self(lo, hi)
             }
 
+            fn wrapping_div_s(self, other: Self) -> Self {
+                if other == Self::MIN_U {
+                    Self::MAX_U
+                } else if self == Self::MIN_S && other == Self::MAX_U {
+                    Self::MIN_S
+                } else {
+                    self.divs(other).0
+                }
+            }
+
             fn wrapping_div_u(self, other: Self) -> Self {
                 if other == Self::MIN_U {
                     Self::MAX_U
@@ -1246,18 +1259,6 @@ macro_rules! construct_eint_twin {
 
             fn overflowing_rem(self, other: Self) -> (Self, bool) {
                 (self.wrapping_rem(other), false)
-            }
-
-            fn wrapping_div_s(self, other: Self) -> Self {
-                let minus_min = Self::ONE << (Self::BITS - 1);
-                let minus_one = Self::MAX_U;
-                if other == Self::MIN_U {
-                    Self::MAX_U
-                } else if self == minus_min && other == minus_one {
-                    minus_min
-                } else {
-                    self.divs(other).0
-                }
             }
 
             fn wrapping_rem(self, other: Self) -> Self {
@@ -1425,9 +1426,9 @@ macro_rules! construct_eint_twin {
             }
 
             /// Inspired by https://github.com/chfast/intx/blob/master/include/intx/intx.hpp#L760
-            fn divs(self, rhs: Self) -> (Self, Self) {
+            fn divs(self, other: Self) -> (Self, Self) {
                 let x = self;
-                let y = rhs;
+                let y = other;
                 let x_is_neg = x.is_negative();
                 let y_is_neg = y.is_negative();
                 let x_abs = if x_is_neg { -x } else { x };

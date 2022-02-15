@@ -57,6 +57,23 @@ pub trait Eint:
         (self & other).wrapping_add((self ^ other).wrapping_shr(1))
     }
 
+    fn average_sub_s(self, other: Self) -> Self {
+        let (lo, borrow) = self.overflowing_sub_u(other);
+        let hi_0 = if !self.is_negative() { Self::MIN_U } else { Self::MAX_U };
+        let hi_1 = if !other.is_negative() { Self::MIN_U } else { Self::MAX_U };
+        let hi = hi_0.wrapping_sub(hi_1).wrapping_sub(Self::from(borrow));
+        lo.wrapping_shr(1) | hi.wrapping_shl(1).wrapping_shl(Self::BITS - 2)
+    }
+
+    fn average_sub_u(self, other: Self) -> Self {
+        let (lo, borrow) = self.overflowing_sub_u(other);
+        if borrow {
+            (lo >> 1) | (Self::ONE << (Self::BITS - 1))
+        } else {
+            lo >> 1
+        }
+    }
+
     fn is_negative(self) -> bool;
 
     fn overflowing_add_s(self, other: Self) -> (Self, bool);
@@ -200,25 +217,6 @@ pub trait Eint:
     /// Returns a tuple of the divisor along with a boolean indicating whether an arithmetic overflow would occur. Note
     /// that for unsigned integers overflow never occurs, so the second value is always false.
     fn overflowing_rem(self, other: Self) -> (Self, bool);
-
-    /// Averaging subtract of unsigned integers.
-    fn average_sub(self, other: Self) -> Self {
-        let (lo, borrow) = self.overflowing_sub_u(other);
-        if borrow {
-            (lo >> 1) | (Self::ONE << (Self::BITS - 1))
-        } else {
-            lo >> 1
-        }
-    }
-
-    /// Averaging subtract of signed integers.
-    fn average_sub_s(self, other: Self) -> Self {
-        let h0 = if !self.is_negative() { Self::MIN_U } else { Self::MAX_U };
-        let h1 = if !other.is_negative() { Self::MIN_U } else { Self::MAX_U };
-        let (lo, borrow) = self.overflowing_sub_u(other);
-        let hi = h0.wrapping_sub(h1).wrapping_sub(Self::from(borrow));
-        lo.wrapping_shr(1) | hi.wrapping_shl(1).wrapping_shl(Self::BITS - 2)
-    }
 
     /// Wrapping (modular) division. Computes self / rhs. Wrapped division on unsigned types is just normal division.
     /// There’s no way wrapping could ever happen. This function exists, so that all operations are accounted for in

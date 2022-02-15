@@ -24,7 +24,7 @@ proptest! {
         let r0 = Eint::average_add_s(E64::from(x), E64::from(y));
         let r1 = Eint::average_add_s(T64::recv(x), T64::recv(y));
         assert_eq!(r0, r1.into());
-        assert_eq!(r0, E64((((x as i64 as i128) + (y as i64 as i128)) >> 1) as i64 as u64))
+        assert_eq!(r0, E64((((x as i64 as i128) + (y as i64 as i128)) >> 1) as i64 as u64));
     }
 
     #[test]
@@ -32,7 +32,23 @@ proptest! {
         let r0 = Eint::average_add_u(E64::from(x), E64::from(y));
         let r1 = Eint::average_add_u(T64::recv(x), T64::recv(y));
         assert_eq!(r0, r1.into());
-        assert_eq!(r0, E64( ((x as u128 + y as u128) >> 1) as u64 ))
+        assert_eq!(r0, E64(((x as u128 + y as u128) >> 1) as u64));
+    }
+
+    #[test]
+    fn test_average_sub_s(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
+        let r0 = Eint::average_sub_s(E64::from(x), E64::from(y));
+        let r1 = Eint::average_sub_s(T64::recv(x), T64::recv(y));
+        assert_eq!(r0, r1.into());
+        assert_eq!(r0, E64((((x as i64 as i128).wrapping_sub(y as i64 as i128)) >> 1) as i64 as u64));
+    }
+
+    #[test]
+    fn test_average_sub_u(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
+        let r0 = Eint::average_sub_u(E64::from(x), E64::from(y));
+        let r1 = Eint::average_sub_u(T64::recv(x), T64::recv(y));
+        assert_eq!(r0, r1.into());
+        assert_eq!(r0, E64(((x as u128).wrapping_sub(y as u128) >> 1) as u64));
     }
 
     #[test]

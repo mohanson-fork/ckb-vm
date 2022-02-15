@@ -252,7 +252,7 @@ fn test_average_sub() {
         let lhs = case[0];
         let rhs = case[1];
         let e = case[2];
-        let r = lhs.average_sub(rhs);
+        let r = lhs.average_sub_u(rhs);
         assert_eq!(e, r);
     }
 }

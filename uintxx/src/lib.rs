@@ -323,12 +323,6 @@ pub trait Eint:
 
     /// Compare signed.
     fn cmp_s(&self, other: &Self) -> std::cmp::Ordering;
-
-    /// Calculates the divisor when self is divided by rhs.
-    ///
-    /// Returns a tuple of the divisor along with a boolean indicating whether an arithmetic overflow would occur. Note
-    /// that for unsigned integers overflow never occurs, so the second value is always false.
-    fn overflowing_rem(self, other: Self) -> (Self, bool);
 }
 
 #[macro_export]
@@ -735,10 +729,6 @@ macro_rules! construct_eint_wrap {
 
             fn cmp_s(&self, other: &Self) -> std::cmp::Ordering {
                 (self.0 as $sint).cmp(&(other.0 as $sint))
-            }
-
-            fn overflowing_rem(self, other: Self) -> (Self, bool) {
-                (self.wrapping_rem_u(other), false)
             }
         }
 
@@ -1273,10 +1263,6 @@ macro_rules! construct_eint_twin {
                     (true, false) => std::cmp::Ordering::Less,
                     (true, true) => self.cmp(&other),
                 }
-            }
-
-            fn overflowing_rem(self, other: Self) -> (Self, bool) {
-                (self.wrapping_rem_u(other), false)
             }
         }
 

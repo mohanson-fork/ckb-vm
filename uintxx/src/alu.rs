@@ -128,7 +128,7 @@ pub fn mulh<T: Eint>(lhs: T, rhs: T) -> T {
 
 /// Unsigned multiply, returning high bits of product.
 pub fn mulhu<T: Eint>(lhs: T, rhs: T) -> T {
-    let (_, hi) = lhs.widening_mul(rhs);
+    let (_, hi) = lhs.widening_mul_u(rhs);
     hi
 }
 
@@ -196,7 +196,7 @@ pub fn nmsub<T: Eint>(lhs: T, rhs: T, r: T) -> T {
 
 /// Widening unsigned-integer multiply-add, overwrite addend
 pub fn wmaccu<T: Eint>(lhs: T, rhs: T, r: T) -> (T, T) {
-    let (lo, hi) = lhs.widening_mul(rhs);
+    let (lo, hi) = lhs.widening_mul_u(rhs);
     let (lo, carry) = lo.overflowing_add_u(r);
     let hi = hi.wrapping_add(T::from(carry));
     (lo, hi)

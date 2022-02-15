@@ -177,6 +177,47 @@ pub trait Eint:
         (lo, Self::from(carry))
     }
 
+    /// Signed interger widening multiple.
+    ///
+    /// Inspired by https://sqlite.in/?qa=668884/c-32-bit-signed-integer-multiplication-without-using-64-bit-data-type
+    fn widening_mul_s(self, other: Self) -> (Self, Self) {
+        let (lo, hi) = self.widening_mul_u(other);
+        let hi = hi
+            - if self.is_negative() { other } else { Self::MIN_U }
+            - if other.is_negative() { self } else { Self::MIN_U };
+        (lo, hi)
+    }
+
+    /// Widening signed and unsigned integer multiply.
+    fn widening_mul_su(self, other: Self) -> (Self, Self) {
+        if !other.is_negative() {
+            self.widening_mul_s(other)
+        } else {
+            let (lo, hi) = self.widening_mul_s(other);
+            let hi = hi + self;
+            (lo, hi)
+        }
+    }
+
+    /// Function widening_mul returns the product of x and y: (lo, hi) = x * y
+    /// with the product bits' upper half returned in hi and the lower half returned in lo.
+    ///
+    /// Inspired by https://pkg.go.dev/math/bits@go1.17.2#Mul64
+    fn widening_mul_u(self, other: Self) -> (Self, Self) {
+        let x0 = self.lo();
+        let x1 = self.hi();
+        let y0 = other.lo();
+        let y1 = other.hi();
+        let w0 = x0.wrapping_mul(y0);
+        let t = x1.wrapping_mul(y0).wrapping_add(w0.hi());
+        let w1 = t.lo();
+        let w2 = t.hi();
+        let w1 = x0.wrapping_mul(y1).wrapping_add(w1);
+        let hi = x1.wrapping_mul(y1).wrapping_add(w2).wrapping_add(w1.hi());
+        let lo = self.wrapping_mul(other);
+        (lo, hi)
+    }
+
     /// Signed widening substract.
     fn widening_sub_s(self, other: Self) -> (Self, Self) {
         let hi_0 = if self.is_negative() { Self::MAX_U } else { Self::MIN_U };
@@ -292,47 +333,6 @@ pub trait Eint:
 
     /// Wrapping (modular) remainder signed.
     fn wrapping_rem_s(self, other: Self) -> Self;
-
-    /// Function widening_mul returns the product of x and y: (lo, hi) = x * y
-    /// with the product bits' upper half returned in hi and the lower half returned in lo.
-    ///
-    /// Inspired by https://pkg.go.dev/math/bits@go1.17.2#Mul64
-    fn widening_mul(self, other: Self) -> (Self, Self) {
-        let x0 = self.lo();
-        let x1 = self.hi();
-        let y0 = other.lo();
-        let y1 = other.hi();
-        let w0 = x0 * y0;
-        let t = x1 * y0 + w0.hi();
-        let w1 = t.lo();
-        let w2 = t.hi();
-        let w1 = w1 + x0 * y1;
-        let hi = x1 * y1 + w2 + w1.hi();
-        let lo = self.wrapping_mul(other);
-        (lo, hi)
-    }
-
-    /// Signed interger widening multiple.
-    ///
-    /// Inspired by https://sqlite.in/?qa=668884/c-32-bit-signed-integer-multiplication-without-using-64-bit-data-type
-    fn widening_mul_s(self, other: Self) -> (Self, Self) {
-        let (lo, hi) = self.widening_mul(other);
-        let hi = hi
-            - if self.is_negative() { other } else { Self::MIN_U }
-            - if other.is_negative() { self } else { Self::MIN_U };
-        (lo, hi)
-    }
-
-    /// Widening signed and unsigned integer multiply.
-    fn widening_mul_su(self, other: Self) -> (Self, Self) {
-        if !other.is_negative() {
-            self.widening_mul_s(other)
-        } else {
-            let (lo, hi) = self.widening_mul_s(other);
-            let hi = hi + self;
-            (lo, hi)
-        }
-    }
 }
 
 #[macro_export]
@@ -1104,7 +1104,7 @@ macro_rules! construct_eint_twin {
             }
 
             fn wrapping_mul(self, other: Self) -> Self {
-                let (lo, hi) = self.0.widening_mul(other.0);
+                let (lo, hi) = self.0.widening_mul_u(other.0);
                 let hi_0 = self.0.wrapping_mul(other.1);
                 let hi_1 = self.1.wrapping_mul(other.0);
                 let hi = hi.wrapping_add(hi_0).wrapping_add(hi_1);
@@ -1218,7 +1218,7 @@ macro_rules! construct_eint_twin {
                         true,
                     ),
                 };
-                let lo = self.0.widening_mul(other.0);
+                let lo = self.0.widening_mul_u(other.0);
                 let lo = Self(lo.0, lo.1);
                 let (hi, hi_overflow_add) = lo.1.overflowing_add_u(hi);
                 let lo = Self(lo.0, hi);

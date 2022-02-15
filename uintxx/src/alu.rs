@@ -93,7 +93,7 @@ pub fn xor<T: Eint>(lhs: T, rhs: T) -> T {
 
 /// Saturating adds of unsigned integers.
 pub fn saddu<T: Eint>(lhs: T, rhs: T) -> T {
-    let (r, _) = lhs.saturating_add(rhs);
+    let (r, _) = lhs.saturating_add_u(rhs);
     r
 }
 
@@ -105,7 +105,7 @@ pub fn sadd<T: Eint>(lhs: T, rhs: T) -> T {
 
 /// Saturating subtract of unsigned integers.
 pub fn ssubu<T: Eint>(lhs: T, rhs: T) -> T {
-    let (r, _) = lhs.saturating_sub(rhs);
+    let (r, _) = lhs.saturating_sub_u(rhs);
     r
 }
 

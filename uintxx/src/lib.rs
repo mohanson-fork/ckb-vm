@@ -60,6 +60,45 @@ pub trait Eint:
     fn wrapping_shr(self, other: u32) -> Self;
     fn wrapping_sub(self, other: Self) -> Self;
 
+    fn saturating_add_s(self, other: Self) -> (Self, bool) {
+        let r = self.wrapping_add(other);
+        if !(self ^ other).is_negative() {
+            if (r ^ self).is_negative() {
+                let r = if self.is_negative() { Self::MIN_S } else { Self::MAX_S };
+                return (r, true);
+            }
+        }
+        (r, false)
+    }
+
+    fn saturating_add_u(self, other: Self) -> (Self, bool) {
+        let (r, overflow) = self.overflowing_add_u(other);
+        if overflow {
+            (Self::MAX_U, overflow)
+        } else {
+            (r, overflow)
+        }
+    }
+
+    fn saturating_sub_s(self, other: Self) -> (Self, bool) {
+        let r = self.wrapping_sub(other);
+        if (self ^ other).is_negative() {
+            if (r ^ self).is_negative() {
+                let r = if self.is_negative() { Self::MIN_S } else { Self::MAX_S };
+                return (r, true);
+            }
+        }
+        (r, false)
+    }
+
+    fn saturating_sub_u(self, other: Self) -> (Self, bool) {
+        if self > other {
+            (self.wrapping_sub(other), false)
+        } else {
+            (Self::MIN_U, true)
+        }
+    }
+
     /// For integer operations, the scalar can be taken from the scalar x register specified by rs1. If XLEN>SEW, the
     /// least-significant SEW bits of the x register are used, unless otherwise specified. If XLEN<SEW, the value from
     /// the x register is sign-extended to SEW bits.
@@ -144,19 +183,6 @@ pub trait Eint:
     /// Returns a tuple of the divisor along with a boolean indicating whether an arithmetic overflow would occur. Note
     /// that for unsigned integers overflow never occurs, so the second value is always false.
     fn overflowing_rem(self, other: Self) -> (Self, bool);
-
-    /// Saturating integer addition. Computes self + rhs, saturating at the numeric bounds instead of overflowing.
-    fn saturating_add(self, other: Self) -> (Self, bool);
-
-    /// Saturating addition with a signed integer. Computes self + rhs, saturating at the numeric bounds instead of
-    /// overflowing.
-    fn saturating_add_s(self, other: Self) -> (Self, bool);
-
-    /// Saturating integer subtraction. Computes self - rhs, saturating at the numeric bounds instead of overflowing.
-    fn saturating_sub(self, other: Self) -> (Self, bool);
-
-    /// Saturating integer subtraction. Computes self - rhs, saturating at the numeric bounds instead of overflowing.
-    fn saturating_sub_s(self, other: Self) -> (Self, bool);
 
     /// Averaging adds of unsigned integers.
     fn average_add(self, other: Self) -> Self {
@@ -676,53 +702,6 @@ macro_rules! construct_eint_wrap {
 
             fn overflowing_rem(self, other: Self) -> (Self, bool) {
                 (self.wrapping_rem(other), false)
-            }
-
-            fn saturating_add(self, other: Self) -> (Self, bool) {
-                let (r, overflow) = self.overflowing_add_u(other);
-                if overflow {
-                    (Self::MAX_U, overflow)
-                } else {
-                    (r, overflow)
-                }
-            }
-
-            fn saturating_add_s(self, other: Self) -> (Self, bool) {
-                let r = self.wrapping_add(other);
-                if !(self ^ other).is_negative() {
-                    if (r ^ self).is_negative() {
-                        let r = if self.is_negative() {
-                            Self::MIN_S
-                        } else {
-                            Self::MAX_S
-                        };
-                        return (r, true);
-                    }
-                }
-                (r, false)
-            }
-
-            fn saturating_sub(self, other: Self) -> (Self, bool) {
-                if self > other {
-                    (self.wrapping_sub(other), false)
-                } else {
-                    (Self::MIN_U, true)
-                }
-            }
-
-            fn saturating_sub_s(self, other: Self) -> (Self, bool) {
-                let r = self.wrapping_sub(other);
-                if (self ^ other).is_negative() {
-                    if (r ^ self).is_negative() {
-                        let r = if self.is_negative() {
-                            Self::MIN_S
-                        } else {
-                            Self::MAX_S
-                        };
-                        return (r, true);
-                    }
-                }
-                (r, false)
             }
 
             fn wrapping_div(self, other: Self) -> Self {
@@ -1247,53 +1226,6 @@ macro_rules! construct_eint_twin {
 
             fn overflowing_rem(self, other: Self) -> (Self, bool) {
                 (self.wrapping_rem(other), false)
-            }
-
-            fn saturating_add(self, other: Self) -> (Self, bool) {
-                let (r, overflow) = self.overflowing_add_u(other);
-                if overflow {
-                    (Self::MAX_U, overflow)
-                } else {
-                    (r, overflow)
-                }
-            }
-
-            fn saturating_add_s(self, other: Self) -> (Self, bool) {
-                let r = self.wrapping_add(other);
-                if !(self ^ other).is_negative() {
-                    if (r ^ self).is_negative() {
-                        let r = if self.is_negative() {
-                            Self::MIN_S
-                        } else {
-                            Self::MAX_S
-                        };
-                        return (r, true);
-                    }
-                }
-                (r, false)
-            }
-
-            fn saturating_sub(self, other: Self) -> (Self, bool) {
-                if self > other {
-                    (self.wrapping_sub(other), false)
-                } else {
-                    (Self::MIN_U, true)
-                }
-            }
-
-            fn saturating_sub_s(self, other: Self) -> (Self, bool) {
-                let r = self.wrapping_sub(other);
-                if (self ^ other).is_negative() {
-                    if (r ^ self).is_negative() {
-                        let r = if self.is_negative() {
-                            Self::MIN_S
-                        } else {
-                            Self::MAX_S
-                        };
-                        return (r, true);
-                    }
-                }
-                (r, false)
             }
 
             fn wrapping_div(self, other: Self) -> Self {

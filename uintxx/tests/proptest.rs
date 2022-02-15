@@ -59,6 +59,42 @@ proptest! {
     }
 
     #[test]
+    fn test_saturating_add_s(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX){
+        let (r0, b0) = Eint::saturating_add_s(E64::from(x), E64::from(y));
+        let (r1, b1) = Eint::saturating_add_s(T64::recv(x), T64::recv(y));
+        assert_eq!(r0, r1.into());
+        assert_eq!(b0, b1);
+        assert_eq!(r0, E64((x as i64).saturating_add(y as i64) as u64))
+    }
+
+    #[test]
+    fn test_saturating_add_u(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX){
+        let (r0, b0) = Eint::saturating_add_u(E64::from(x), E64::from(y));
+        let (r1, b1) = Eint::saturating_add_u(T64::recv(x), T64::recv(y));
+        assert_eq!(r0, r1.into());
+        assert_eq!(b0, b1);
+        assert_eq!(r0, E64(x.saturating_add(y)))
+    }
+
+    #[test]
+    fn test_saturating_sub_s(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX){
+        let (r0, b0) = Eint::saturating_sub_s(E64::from(x), E64::from(y));
+        let (r1, b1) = Eint::saturating_sub_s(T64::recv(x), T64::recv(y));
+        assert_eq!(r0, r1.into());
+        assert_eq!(b0, b1);
+        assert_eq!(r0, E64((x as i64).saturating_sub(y as i64) as u64))
+    }
+
+    #[test]
+    fn test_saturating_sub_u(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX){
+        let (r0, b0) = Eint::saturating_sub_u(E64::from(x), E64::from(y));
+        let (r1, b1) = Eint::saturating_sub_u(T64::recv(x), T64::recv(y));
+        assert_eq!(r0, r1.into());
+        assert_eq!(b0, b1);
+        assert_eq!(r0, E64(x.saturating_sub(y)))
+    }
+
+    #[test]
     fn test_wrapping_add(x in u64::MIN..=u64::MAX, y in u64::MIN..=u64::MAX) {
         let r0 = Eint::wrapping_add(E64::from(x), E64::from(y));
         let r1 = Eint::wrapping_add(T64::recv(x), T64::recv(y));

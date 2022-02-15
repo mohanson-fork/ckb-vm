@@ -109,6 +109,9 @@ pub trait Eint:
     fn overflowing_add_u(self, other: Self) -> (Self, bool);
 
     /// Calculates self * rhs.
+    fn overflowing_mul_s(self, other: Self) -> (Self, bool);
+
+    /// Calculates self * rhs.
     fn overflowing_mul_u(self, other: Self) -> (Self, bool);
 
     /// Calculates self - rhs.
@@ -599,6 +602,11 @@ macro_rules! construct_eint_wrap {
                 (Self(r), carry)
             }
 
+            fn overflowing_mul_s(self, other: Self) -> (Self, bool) {
+                let (r, carry) = (self.0 as $sint).overflowing_mul(other.0 as $sint);
+                (Self(r as $uint), carry)
+            }
+
             fn overflowing_mul_u(self, other: Self) -> (Self, bool) {
                 let (r, carry) = self.0.overflowing_mul(other.0);
                 (Self(r), carry)
@@ -1076,6 +1084,11 @@ macro_rules! construct_eint_twin {
                 let (hi, hi_carry_1) = self.1.overflowing_add_u(<$half>::from(lo_carry));
                 let (hi, hi_carry_2) = hi.overflowing_add_u(other.1);
                 (Self(lo, hi), hi_carry_1 || hi_carry_2)
+            }
+
+            fn overflowing_mul_s(self, other: Self) -> (Self, bool) {
+                let (lo, hi) = self.widening_mul_s(other);
+                (lo, hi != Self::MIN_U)
             }
 
             fn overflowing_mul_u(self, other: Self) -> (Self, bool) {

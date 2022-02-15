@@ -49,16 +49,23 @@ pub trait Eint:
     const ONE: Self;
     const ZERO: Self;
 
+    fn average_add_s(self, other: Self) -> Self {
+        (self & other).wrapping_add((self ^ other).wrapping_sra(1))
+    }
+
+    fn average_add_u(self, other: Self) -> Self {
+        (self & other).wrapping_add((self ^ other).wrapping_shr(1))
+    }
+
     fn is_negative(self) -> bool;
+
     fn overflowing_add_s(self, other: Self) -> (Self, bool);
+
     fn overflowing_add_u(self, other: Self) -> (Self, bool);
+
     fn overflowing_sub_s(self, other: Self) -> (Self, bool);
+
     fn overflowing_sub_u(self, other: Self) -> (Self, bool);
-    fn wrapping_add(self, other: Self) -> Self;
-    fn wrapping_mul(self, other: Self) -> Self;
-    fn wrapping_shl(self, other: u32) -> Self;
-    fn wrapping_shr(self, other: u32) -> Self;
-    fn wrapping_sub(self, other: Self) -> Self;
 
     fn saturating_add_s(self, other: Self) -> (Self, bool) {
         let r = self.wrapping_add(other);
@@ -98,6 +105,16 @@ pub trait Eint:
             (Self::MIN_U, true)
         }
     }
+
+    fn wrapping_add(self, other: Self) -> Self;
+
+    fn wrapping_mul(self, other: Self) -> Self;
+
+    fn wrapping_shl(self, other: u32) -> Self;
+
+    fn wrapping_shr(self, other: u32) -> Self;
+
+    fn wrapping_sub(self, other: Self) -> Self;
 
     /// For integer operations, the scalar can be taken from the scalar x register specified by rs1. If XLEN>SEW, the
     /// least-significant SEW bits of the x register are used, unless otherwise specified. If XLEN<SEW, the value from
@@ -183,16 +200,6 @@ pub trait Eint:
     /// Returns a tuple of the divisor along with a boolean indicating whether an arithmetic overflow would occur. Note
     /// that for unsigned integers overflow never occurs, so the second value is always false.
     fn overflowing_rem(self, other: Self) -> (Self, bool);
-
-    /// Averaging adds of unsigned integers.
-    fn average_add(self, other: Self) -> Self {
-        (self & other).wrapping_add((self ^ other) >> 1)
-    }
-
-    /// Averaging adds of signed integers.
-    fn average_add_s(self, other: Self) -> Self {
-        (self & other).wrapping_add((self ^ other).wrapping_sra(1))
-    }
 
     /// Averaging subtract of unsigned integers.
     fn average_sub(self, other: Self) -> Self {

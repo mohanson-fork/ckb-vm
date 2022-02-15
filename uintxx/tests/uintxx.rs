@@ -196,7 +196,7 @@ fn test_average_add() {
         let lhs = case[0];
         let rhs = case[1];
         let e = case[2];
-        let r = lhs.average_add(rhs);
+        let r = lhs.average_add_u(rhs);
         assert_eq!(r, e);
     }
 }

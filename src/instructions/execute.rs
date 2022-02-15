@@ -4319,10 +4319,10 @@ pub fn execute_instruction<Mac: Machine>(
             v_vx_loop_s!(inst, machine, Eint::average_add_s);
         }
         insts::OP_VAADDU_VV => {
-            v_vv_loop_u!(inst, machine, Eint::average_add);
+            v_vv_loop_u!(inst, machine, Eint::average_add_u);
         }
         insts::OP_VAADDU_VX => {
-            v_vx_loop_u!(inst, machine, Eint::average_add);
+            v_vx_loop_u!(inst, machine, Eint::average_add_u);
         }
         insts::OP_VASUB_VV => {
             v_vv_loop_s!(inst, machine, Eint::average_sub_s);

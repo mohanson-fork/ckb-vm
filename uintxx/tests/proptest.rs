@@ -52,6 +52,30 @@ proptest! {
     }
 
     #[test]
+    fn test_clz(x in u64::MIN..=u64::MAX) {
+        let r0 = E64::from(x).clz();
+        let r1 = T64::recv(x).clz();
+        assert_eq!(r0, r1);
+        assert_eq!(r0, x.leading_zeros());
+    }
+
+    #[test]
+    fn test_cpop(x in u64::MIN..=u64::MAX) {
+        let r0 = E64::from(x).cpop();
+        let r1 = T64::recv(x).cpop();
+        assert_eq!(r0, r1);
+        assert_eq!(r0, x.count_ones());
+    }
+
+    #[test]
+    fn test_ctz(x in u64::MIN..=u64::MAX) {
+        let r0 = E64::from(x).ctz();
+        let r1 = T64::recv(x).ctz();
+        assert_eq!(r0, r1);
+        assert_eq!(r0, x.trailing_zeros());
+    }
+
+    #[test]
     fn test_is_negative(x in u64::MIN..=u64::MAX) {
         let r0 = E64::from(x).is_negative();
         let r1 = T64::recv(x).is_negative();

@@ -78,6 +78,15 @@ pub trait Eint:
         }
     }
 
+    /// Returns the number of leading zeros in the binary representation of self.
+    fn clz(self) -> u32;
+
+    /// Returns the number of ones in the binary representation of self.
+    fn cpop(self) -> u32;
+
+    /// Returns the number of trailing zeros in the binary representation of self.
+    fn ctz(self) -> u32;
+
     /// Returns true if highest bit is set.
     fn is_negative(self) -> bool;
 
@@ -212,15 +221,6 @@ pub trait Eint:
 
     /// Save the lower part integer as a byte array in little-endian byte order to memory.
     fn save_lo(&self, b: &mut [u8]);
-
-    /// Returns the number of leading zeros in the binary representation of self.
-    fn leading_zeros(self) -> u32;
-
-    /// Returns the number of trailing zeros in the binary representation of self.
-    fn trailing_zeros(self) -> u32;
-
-    /// Returns the number of ones in the binary representation of self.
-    fn count_ones(self) -> u32;
 
     /// Compare signed.
     fn cmp_s(&self, other: &Self) -> std::cmp::Ordering;
@@ -584,6 +584,18 @@ macro_rules! construct_eint_wrap {
             const ONE: Self = Self(1);
             const ZERO: Self = Self(0);
 
+            fn clz(self) -> u32 {
+                self.0.leading_zeros()
+            }
+
+            fn cpop(self) -> u32 {
+                self.0.count_ones()
+            }
+
+            fn ctz(self) -> u32 {
+                self.0.trailing_zeros()
+            }
+
             fn is_negative(self) -> bool {
                 (self.0 as $sint).is_negative()
             }
@@ -685,18 +697,6 @@ macro_rules! construct_eint_wrap {
             fn save_lo(&self, b: &mut [u8]) {
                 let buf = self.0.to_le_bytes();
                 b.copy_from_slice(&buf[0..buf.len() >> 1]);
-            }
-
-            fn leading_zeros(self) -> u32 {
-                self.0.leading_zeros()
-            }
-
-            fn trailing_zeros(self) -> u32 {
-                self.0.trailing_zeros()
-            }
-
-            fn count_ones(self) -> u32 {
-                self.0.count_ones()
             }
 
             fn cmp_s(&self, other: &Self) -> std::cmp::Ordering {
@@ -1033,6 +1033,26 @@ macro_rules! construct_eint_twin {
             const ONE: Self = Self(<$half>::ONE, <$half>::MIN_U);
             const ZERO: Self = Self(<$half>::MIN_U, <$half>::MIN_U);
 
+            fn clz(self) -> u32 {
+                if self.1 == <$half>::MIN_U {
+                    Self::BITS / 2 + self.0.clz()
+                } else {
+                    self.1.clz()
+                }
+            }
+
+            fn cpop(self) -> u32 {
+                self.0.cpop() + self.1.cpop()
+            }
+
+            fn ctz(self) -> u32 {
+                if self.0 == <$half>::MIN_U {
+                    Self::BITS / 2 + self.1.ctz()
+                } else {
+                    self.0.ctz()
+                }
+            }
+
             fn is_negative(self) -> bool {
                 self != <$name>::MIN_U && self.wrapping_shr(Self::BITS - 1) == <$name>::ONE
             }
@@ -1181,26 +1201,6 @@ macro_rules! construct_eint_twin {
 
             fn save_lo(&self, b: &mut [u8]) {
                 self.0.save(b);
-            }
-
-            fn leading_zeros(self) -> u32 {
-                if self.1 == <$half>::MIN_U {
-                    Self::BITS / 2 + self.0.leading_zeros()
-                } else {
-                    self.1.leading_zeros()
-                }
-            }
-
-            fn trailing_zeros(self) -> u32 {
-                if self.0 == <$half>::MIN_U {
-                    Self::BITS / 2 + self.1.trailing_zeros()
-                } else {
-                    self.0.trailing_zeros()
-                }
-            }
-
-            fn count_ones(self) -> u32 {
-                self.0.count_ones() + self.1.count_ones()
             }
 
             fn cmp_s(&self, other: &Self) -> std::cmp::Ordering {
@@ -1355,7 +1355,7 @@ macro_rules! construct_eint_twin {
                 let mask = twos - <$half>::ONE;
                 assert!(y != <$half>::ZERO);
                 assert!(y > self.1);
-                let s = y.leading_zeros();
+                let s = y.clz();
                 let y = y << s;
                 let yn1 = y >> (Self::BITS / 4);
                 let yn0 = y & mask;
@@ -1407,7 +1407,7 @@ macro_rules! construct_eint_twin {
                     let (q, r) = self.div_half_1(other.0);
                     return (q, Self::from(r));
                 }
-                let n = other.1.leading_zeros();
+                let n = other.1.clz();
                 let u1 = self >> 1;
                 let v1 = other << n;
                 let (tq, _) = u1.div_half_0(v1.1);

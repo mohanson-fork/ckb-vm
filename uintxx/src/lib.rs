@@ -99,6 +99,9 @@ pub trait Eint:
     /// Returns the lower part.
     fn lo(self) -> Self;
 
+    /// Returns the lower part and sign extend it.
+    fn lo_sext(self) -> Self;
+
     /// Calculates self + rhs.
     fn overflowing_add_s(self, other: Self) -> (Self, bool);
 
@@ -245,11 +248,6 @@ pub trait Eint:
 
     /// Returns the lower 64 bits.
     fn u64(self) -> u64;
-
-    /// Returns the lower part with sign extented.
-    fn lo_sext(self) -> Self {
-        self.wrapping_shl(Self::BITS / 2).wrapping_sra(Self::BITS / 2)
-    }
 
     /// Read a native endian integer value from its representation as a byte slice in little endian.
     fn read(b: &[u8]) -> Self;
@@ -590,6 +588,10 @@ macro_rules! construct_eint_wrap {
 
             fn lo(self) -> Self {
                 self & (Self::MAX_U >> (Self::BITS >> 1))
+            }
+
+            fn lo_sext(self) -> Self {
+                self.sext((Self::BITS >> 1) - 1)
             }
 
             fn overflowing_add_s(self, other: Self) -> (Self, bool) {
@@ -1054,6 +1056,15 @@ macro_rules! construct_eint_twin {
 
             fn lo(self) -> Self {
                 Self(self.0, <$half>::MIN_U)
+            }
+
+            fn lo_sext(self) -> Self {
+                let hi = if self.0.is_negative() {
+                    <$half>::MAX_U
+                } else {
+                    <$half>::MIN_U
+                };
+                Self(self.0, hi)
             }
 
             fn overflowing_add_s(self, other: Self) -> (Self, bool) {

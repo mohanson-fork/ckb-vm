@@ -5191,7 +5191,7 @@ pub fn execute_instruction<Mac: Machine>(
             } else {
                 E2048::read(machine.element_ref(i.vs2(), VLEN as u64, 0))
             };
-            let r = m.trailing_zeros();
+            let r = m.ctz();
             if r == 2048 {
                 update_register(machine, i.vd(), Mac::REG::from_u64(0xffff_ffff_ffff_ffff));
             } else {
@@ -5206,7 +5206,7 @@ pub fn execute_instruction<Mac: Machine>(
             } else {
                 E2048::read(machine.element_ref(i.vs2(), VLEN as u64, 0))
             };
-            let r = m.count_ones();
+            let r = m.cpop();
             update_register(machine, i.vd(), Mac::REG::from_u32(r));
         }
         _ => return Err(Error::InvalidOp(op)),

@@ -160,7 +160,7 @@ pub trait Eint:
     /// Widening add.
     fn widening_add_u(self, other: Self) -> (Self, Self) {
         let (lo, carry) = self.overflowing_add_u(other);
-        (lo, if carry { Self::ONE } else { Self::MIN_U })
+        (lo, Self::from(carry))
     }
 
     /// Signed widening substract.
@@ -289,31 +289,31 @@ pub trait Eint:
     /// Wrapping (modular) remainder signed.
     fn wrapping_rem_s(self, other: Self) -> Self;
 
-    /// Calculates self + rhs + carry without the ability to overflow.
-    fn carrying_add(self, other: Self, carry: bool) -> (Self, bool) {
-        let (r, carry0) = self.overflowing_add_u(other);
-        let (r, carry1) = r.overflowing_add_u(if carry { Self::ONE } else { Self::MIN_U });
-        (r, carry0 | carry1)
-    }
-
     /// Signed carring add.
     fn carrying_add_s(self, other: Self, carry: bool) -> (Self, bool) {
         let (r, carry0) = self.overflowing_add_s(other);
-        let (r, carry1) = r.overflowing_add_s(if carry { Self::ONE } else { Self::MIN_U });
+        let (r, carry1) = r.overflowing_add_s(Self::from(carry));
         (r, carry0 | carry1)
     }
 
-    /// Calculates self - rhs - borrow without the ability to overflow.
-    fn carrying_sub(self, other: Self, carry: bool) -> (Self, bool) {
-        let (r, borrow0) = self.overflowing_sub_u(other);
-        let (r, borrow1) = r.overflowing_sub_u(if carry { Self::ONE } else { Self::MIN_U });
-        (r, borrow0 | borrow1)
+    /// Calculates self + rhs + carry without the ability to overflow.
+    fn carrying_add_u(self, other: Self, carry: bool) -> (Self, bool) {
+        let (r, carry0) = self.overflowing_add_u(other);
+        let (r, carry1) = r.overflowing_add_u(Self::from(carry));
+        (r, carry0 | carry1)
     }
 
     /// Signed carrying sub.
     fn carrying_sub_s(self, other: Self, carry: bool) -> (Self, bool) {
         let (r, borrow0) = self.overflowing_sub_s(other);
-        let (r, borrow1) = r.overflowing_sub_s(if carry { Self::ONE } else { Self::MIN_U });
+        let (r, borrow1) = r.overflowing_sub_s(Self::from(carry));
+        (r, borrow0 | borrow1)
+    }
+
+    /// Calculates self - rhs - borrow without the ability to overflow.
+    fn carrying_sub_u(self, other: Self, carry: bool) -> (Self, bool) {
+        let (r, borrow0) = self.overflowing_sub_u(other);
+        let (r, borrow1) = r.overflowing_sub_u(Self::from(carry));
         (r, borrow0 | borrow1)
     }
 

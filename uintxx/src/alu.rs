@@ -244,6 +244,7 @@ pub fn sll<T: Eint>(lhs: T, rhs: T) -> T {
     lhs.wrapping_shl(rhs.u32())
 }
 
+
 pub fn srl<T: Eint>(lhs: T, rhs: T) -> T {
     lhs.wrapping_shr(rhs.u32())
 }

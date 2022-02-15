@@ -24,20 +24,20 @@ pub trait Eint:
     + std::ops::BitOrAssign
     + std::ops::BitXor<Output = Self>
     + std::ops::BitXorAssign
-    + std::ops::Not
     + std::ops::Neg<Output = Self>
-    + std::cmp::PartialOrd
+    + std::ops::Not
     + std::cmp::Ord
+    + std::cmp::PartialOrd
     + std::ops::Add<Output = Self>
     + std::ops::AddAssign
-    + std::ops::Sub<Output = Self>
-    + std::ops::SubAssign
-    + std::ops::Mul<Output = Self>
-    + std::ops::MulAssign
     + std::ops::Div<Output = Self>
     + std::ops::DivAssign
+    + std::ops::Mul<Output = Self>
+    + std::ops::MulAssign
     + std::ops::Rem<Output = Self>
     + std::ops::RemAssign
+    + std::ops::Sub<Output = Self>
+    + std::ops::SubAssign
     + std::ops::Shl<u32, Output = Self>
     + std::ops::Shr<u32, Output = Self>
 {

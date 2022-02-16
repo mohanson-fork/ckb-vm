@@ -235,7 +235,7 @@ pub trait Eint:
     /// Function widening_mul returns the product of x and y: (lo, hi) = x * y
     /// with the product bits' upper half returned in hi and the lower half returned in lo.
     ///
-    /// Inspired by https://pkg.go.dev/math/bits@go1.17.2#Mul64
+    /// See https://pkg.go.dev/math/bits@go1.17.2#Mul64
     fn widening_mul_u(self, other: Self) -> (Self, Self) {
         let x0 = self.lo();
         let x1 = self.hi();
@@ -1111,7 +1111,7 @@ macro_rules! construct_eint_twin {
                 } else if self == Self::MIN_S && other == Self::MAX_U {
                     Self::MIN_S
                 } else {
-                    self.divs(other).0
+                    self.div_s(other).0
                 }
             }
 
@@ -1119,7 +1119,7 @@ macro_rules! construct_eint_twin {
                 if other == Self::MIN_U {
                     Self::MAX_U
                 } else {
-                    self.div(other).0
+                    self.div_u(other).0
                 }
             }
 
@@ -1139,7 +1139,7 @@ macro_rules! construct_eint_twin {
                 } else if self == minus_min && other == minus_one {
                     Self::MIN_U
                 } else {
-                    self.divs(other).1
+                    self.div_s(other).1
                 }
             }
 
@@ -1147,7 +1147,7 @@ macro_rules! construct_eint_twin {
                 if other == Self::MIN_U {
                     self
                 } else {
-                    self.div(other).1
+                    self.div_u(other).1
                 }
             }
 
@@ -1202,12 +1202,12 @@ macro_rules! construct_eint_twin {
             /// rem = (hi, lo)%y with the dividend bits' upper half in parameter hi and the lower half in parameter lo.
             /// div_half_0 panics for y == 0 (division by zero) or y <= hi (quotient overflow).
             ///
-            /// Inspired by https://cs.opensource.google/go/go/+/refs/tags/go1.17.3:src/math/bits/bits.go;l=512
-            fn div_half_0(self, y: $half) -> ($half, $half) {
+            /// See https://cs.opensource.google/go/go/+/refs/tags/go1.17.3:src/math/bits/bits.go;l=512
+            fn div_u_half_0(self, y: $half) -> ($half, $half) {
                 let twos = <$half>::ONE << (Self::BITS / 4);
                 let mask = twos - <$half>::ONE;
-                assert!(y != <$half>::ZERO);
-                assert!(y > self.1);
+                debug_assert!(y != <$half>::ZERO);
+                debug_assert!(y > self.1);
                 let s = y.clz();
                 let y = y << s;
                 let yn1 = y >> (Self::BITS / 4);
@@ -1243,27 +1243,28 @@ macro_rules! construct_eint_twin {
                 (q1 * twos + q0, (un21 * twos + un0 - q0 * y) >> s)
             }
 
-            fn div_half_1(self, y: $half) -> (Self, $half) {
+            /// See https://github.com/Pilatuz/bigx/blob/8615506d17c5/uint128.go#L319
+            fn div_u_half_1(self, y: $half) -> (Self, $half) {
                 if self.1 < y {
-                    let (lo, r) = self.div_half_0(y);
+                    let (lo, r) = self.div_u_half_0(y);
                     (Self::from(lo), r)
                 } else {
-                    let (hi, r) = Self::from(self.1).div_half_0(y);
-                    let (lo, r) = Self(self.0, r).div_half_0(y);
+                    let (hi, r) = Self::from(self.1).div_u_half_0(y);
+                    let (lo, r) = Self(self.0, r).div_u_half_0(y);
                     (Self(lo, hi), r)
                 }
             }
 
-            /// Inspired by https://github.com/Pilatuz/bigx/blob/8615506d17c5/uint128.go#L291
-            fn div(self, other: Self) -> (Self, Self) {
+            /// See https://github.com/Pilatuz/bigx/blob/8615506d17c5/uint128.go#L291
+            fn div_u(self, other: Self) -> (Self, Self) {
                 if other.1 == <$half>::ZERO {
-                    let (q, r) = self.div_half_1(other.0);
+                    let (q, r) = self.div_u_half_1(other.0);
                     return (q, Self::from(r));
                 }
                 let n = other.1.clz();
                 let u1 = self >> 1;
                 let v1 = other << n;
-                let (tq, _) = u1.div_half_0(v1.1);
+                let (tq, _) = u1.div_u_half_0(v1.1);
                 let mut tq = tq >> (Self::BITS / 2 - 1 - n);
                 if tq != <$half>::ZERO {
                     tq -= <$half>::ONE;
@@ -1277,8 +1278,8 @@ macro_rules! construct_eint_twin {
                 (q, r)
             }
 
-            /// Inspired by https://github.com/chfast/intx/blob/master/include/intx/intx.hpp#L760
-            fn divs(self, other: Self) -> (Self, Self) {
+            /// See https://github.com/chfast/intx/blob/2f62de735fe688e9645af8904099f0571f8f0d9c/include/intx/intx.hpp#L789
+            fn div_s(self, other: Self) -> (Self, Self) {
                 let x = self;
                 let y = other;
                 let x_is_neg = x.is_negative();
@@ -1286,7 +1287,7 @@ macro_rules! construct_eint_twin {
                 let x_abs = if x_is_neg { -x } else { x };
                 let y_abs = if y_is_neg { -y } else { y };
                 let q_is_neg = x_is_neg ^ y_is_neg;
-                let r = x_abs.div(y_abs);
+                let r = x_abs.div_u(y_abs);
                 let quo = r.0;
                 let rem = r.1;
                 let quo = Self::from(if q_is_neg { -quo } else { quo });

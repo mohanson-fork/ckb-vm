@@ -81,6 +81,12 @@ pub trait Eint:
     /// Returns the number of leading zeros in the binary representation of self.
     fn clz(self) -> u32;
 
+    /// Compare signed.
+    fn cmp_s(&self, other: &Self) -> std::cmp::Ordering;
+
+    /// Compare.
+    fn cmp_u(&self, other: &Self) -> std::cmp::Ordering;
+
     /// Returns the number of ones in the binary representation of self.
     fn cpop(self) -> u32;
 
@@ -320,9 +326,6 @@ pub trait Eint:
 
     /// Save the lower part integer as a byte array in little-endian byte order to memory.
     fn save_lo(&self, b: &mut [u8]);
-
-    /// Compare signed.
-    fn cmp_s(&self, other: &Self) -> std::cmp::Ordering;
 }
 
 #[macro_export]
@@ -554,6 +557,14 @@ macro_rules! construct_eint_wrap {
                 self.0.leading_zeros()
             }
 
+            fn cmp_s(&self, other: &Self) -> std::cmp::Ordering {
+                (self.0 as $sint).cmp(&(other.0 as $sint))
+            }
+
+            fn cmp_u(&self, other: &Self) -> std::cmp::Ordering {
+                self.0.cmp(&other.0)
+            }
+
             fn cpop(self) -> u32 {
                 self.0.count_ones()
             }
@@ -725,10 +736,6 @@ macro_rules! construct_eint_wrap {
             fn save_lo(&self, b: &mut [u8]) {
                 let buf = self.0.to_le_bytes();
                 b.copy_from_slice(&buf[0..buf.len() >> 1]);
-            }
-
-            fn cmp_s(&self, other: &Self) -> std::cmp::Ordering {
-                (self.0 as $sint).cmp(&(other.0 as $sint))
             }
         }
 
@@ -910,12 +917,7 @@ macro_rules! construct_eint_twin {
 
         impl std::cmp::Ord for $name {
             fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-                let hi_cmp = self.1.cmp(&other.1);
-                if hi_cmp != std::cmp::Ordering::Equal {
-                    hi_cmp
-                } else {
-                    self.0.cmp(&other.0)
-                }
+                self.cmp_u(other)
             }
         }
 
@@ -1012,6 +1014,26 @@ macro_rules! construct_eint_twin {
                     Self::BITS / 2 + self.0.clz()
                 } else {
                     self.1.clz()
+                }
+            }
+
+            fn cmp_s(&self, other: &Self) -> std::cmp::Ordering {
+                let lhssign = self.is_negative();
+                let rhssign = other.is_negative();
+                match (lhssign, rhssign) {
+                    (false, false) => self.cmp(&other),
+                    (false, true) => std::cmp::Ordering::Greater,
+                    (true, false) => std::cmp::Ordering::Less,
+                    (true, true) => self.cmp(&other),
+                }
+            }
+
+            fn cmp_u(&self, other: &Self) -> std::cmp::Ordering {
+                let hi_cmp = self.1.cmp(&other.1);
+                if hi_cmp != std::cmp::Ordering::Equal {
+                    hi_cmp
+                } else {
+                    self.0.cmp(&other.0)
                 }
             }
 
@@ -1252,17 +1274,6 @@ macro_rules! construct_eint_twin {
 
             fn save_lo(&self, b: &mut [u8]) {
                 self.0.save(b);
-            }
-
-            fn cmp_s(&self, other: &Self) -> std::cmp::Ordering {
-                let lhssign = self.is_negative();
-                let rhssign = other.is_negative();
-                match (lhssign, rhssign) {
-                    (false, false) => self.cmp(&other),
-                    (false, true) => std::cmp::Ordering::Greater,
-                    (true, false) => std::cmp::Ordering::Less,
-                    (true, true) => self.cmp(&other),
-                }
             }
         }
 

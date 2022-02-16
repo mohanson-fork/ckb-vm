@@ -251,3 +251,31 @@ pub fn srl<T: Eint>(lhs: T, rhs: T) -> T {
 pub fn sra<T: Eint>(lhs: T, rhs: T) -> T {
     lhs.wrapping_sra(rhs.u32())
 }
+
+// /// For integer operations, the scalar can be taken from the scalar x register specified by rs1. If XLEN>SEW, the
+// /// least-significant SEW bits of the x register are used, unless otherwise specified. If XLEN<SEW, the value from
+// /// the x register is sign-extended to SEW bits.
+// pub fn vx_s<T: Eint>(x: u64) -> T {
+//     if T::BITS > 64 {
+//         T::from(x as i64)
+//     } else {
+//         T::from(x)
+//     }
+// }
+
+// /// If XLEN>SEW, the least-significant SEW bits of the x register are used. If XLEN<SEW, the value from the x
+// /// register is zero-extended to SEW bits.
+// pub fn vx_u<T: Eint>(x: u64) -> T {
+//     T::from(x)
+// }
+
+// /// For integer operations, the scalar can be a 5-bit immediate, imm[4:0], encoded in the rs1 field. The value is
+// /// sign-extended to SEW bits, unless otherwise specified.
+// fn vi_s<T: Eint>(i: i32) -> T {
+//     T::from(i)
+// }
+
+// /// The value is zero-extended to SEW bits.
+// fn vi_u<T: Eint>(i: u32) -> T {
+//     T::from(i)
+// }

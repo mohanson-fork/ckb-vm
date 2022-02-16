@@ -305,18 +305,33 @@ pub trait Eint:
     /// For integer operations, the scalar can be taken from the scalar x register specified by rs1. If XLEN>SEW, the
     /// least-significant SEW bits of the x register are used, unless otherwise specified. If XLEN<SEW, the value from
     /// the x register is sign-extended to SEW bits.
-    fn vx_s(x: u64) -> Self;
+    fn vx_s(x: u64) -> Self {
+        if Self::BITS <= 64 {
+            Self::from(x)
+        } else {
+            Self::from(x as i64)
+        }
+    }
 
     /// If XLEN>SEW, the least-significant SEW bits of the x register are used. If XLEN<SEW, the value from the x
     /// register is zero-extended to SEW bits.
-    fn vx_u(x: u64) -> Self;
+    fn vx_u(x: u64) -> Self {
+        Self::from(x)
+    }
 
     /// For integer operations, the scalar can be a 5-bit immediate, imm[4:0], encoded in the rs1 field. The value is
     /// sign-extended to SEW bits, unless otherwise specified.
-    fn vi_s(i: i32) -> Self;
+    fn vi_s(i: i32) -> Self {
+        debug_assert!(i >= -16);
+        debug_assert!(i <= 15);
+        Self::from(i)
+    }
 
     /// The value is zero-extended to SEW bits.
-    fn vi_u(i: u32) -> Self;
+    fn vi_u(i: u32) -> Self {
+        debug_assert!(i <= 31);
+        Self::from(i)
+    }
 
     /// Read a native endian integer value from its representation as a byte slice in little endian.
     fn read(b: &[u8]) -> Self;
@@ -697,29 +712,6 @@ macro_rules! construct_eint_wrap {
 
             fn wrapping_sub(self, other: Self) -> Self {
                 Self(self.0.wrapping_sub(other.0))
-            }
-
-            fn vx_s(x: u64) -> Self {
-                if Self::BITS <= 64 {
-                    Self(x as $uint)
-                } else {
-                    Self(x as i64 as $uint)
-                }
-            }
-
-            fn vx_u(x: u64) -> Self {
-                Self(x as $uint)
-            }
-
-            fn vi_s(i: i32) -> Self {
-                assert!(i >= -16);
-                assert!(i <= 15);
-                Self(i as $uint)
-            }
-
-            fn vi_u(i: u32) -> Self {
-                assert!(i <= 31);
-                Self(i as $uint)
             }
 
             fn read(b: &[u8]) -> Self {
@@ -1237,25 +1229,6 @@ macro_rules! construct_eint_twin {
                 let (lo, borrow) = self.0.overflowing_sub_u(other.0);
                 let hi = self.1.wrapping_sub(other.1).wrapping_sub(<$half>::from(borrow));
                 Self(lo, hi)
-            }
-
-            fn vx_s(x: u64) -> Self {
-                Self::from(x as i64)
-            }
-
-            fn vx_u(x: u64) -> Self {
-                Self::from(x)
-            }
-
-            fn vi_s(i: i32) -> Self {
-                assert!(i >= -16);
-                assert!(i <= 15);
-                Self::from(i)
-            }
-
-            fn vi_u(i: u32) -> Self {
-                assert!(i <= 31);
-                Self::from(i)
             }
 
             fn read(b: &[u8]) -> Self {

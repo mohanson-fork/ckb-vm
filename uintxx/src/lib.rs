@@ -302,37 +302,6 @@ pub trait Eint:
 
     /// ================================================================================================================
 
-    /// For integer operations, the scalar can be taken from the scalar x register specified by rs1. If XLEN>SEW, the
-    /// least-significant SEW bits of the x register are used, unless otherwise specified. If XLEN<SEW, the value from
-    /// the x register is sign-extended to SEW bits.
-    fn vx_s(x: u64) -> Self {
-        if Self::BITS <= 64 {
-            Self::from(x)
-        } else {
-            Self::from(x as i64)
-        }
-    }
-
-    /// If XLEN>SEW, the least-significant SEW bits of the x register are used. If XLEN<SEW, the value from the x
-    /// register is zero-extended to SEW bits.
-    fn vx_u(x: u64) -> Self {
-        Self::from(x)
-    }
-
-    /// For integer operations, the scalar can be a 5-bit immediate, imm[4:0], encoded in the rs1 field. The value is
-    /// sign-extended to SEW bits, unless otherwise specified.
-    fn vi_s(i: i32) -> Self {
-        debug_assert!(i >= -16);
-        debug_assert!(i <= 15);
-        Self::from(i)
-    }
-
-    /// The value is zero-extended to SEW bits.
-    fn vi_u(i: u32) -> Self {
-        debug_assert!(i <= 31);
-        Self::from(i)
-    }
-
     /// Read a native endian integer value from its representation as a byte slice in little endian.
     fn read(b: &[u8]) -> Self;
 

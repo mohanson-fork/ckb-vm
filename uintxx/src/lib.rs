@@ -93,6 +93,9 @@ pub trait Eint:
     /// Returns the number of trailing zeros in the binary representation of self.
     fn ctz(self) -> u32;
 
+    /// Get a native endian integer value from its representation as a byte slice in little endian.
+    fn get(mem: &[u8]) -> Self;
+
     /// Returns the higher part.
     fn hi(self) -> Self;
 
@@ -125,6 +128,12 @@ pub trait Eint:
 
     /// Calculates self - rhs.
     fn overflowing_sub_u(self, other: Self) -> (Self, bool);
+
+    /// Save the integer as a byte array in little-endian byte order to memory.
+    fn put(&self, mem: &mut [u8]);
+
+    /// Put the lower part integer as a byte array in little-endian byte order to memory.
+    fn put_lo(&self, mem: &mut [u8]);
 
     /// Saturating integer addition. Computes self + rhs, saturating at the numeric bounds instead of overflowing.
     fn saturating_add_s(self, other: Self) -> (Self, bool) {
@@ -299,17 +308,6 @@ pub trait Eint:
     fn zext(self, other: u32) -> Self {
         self.wrapping_shl(Self::BITS - other - 1).wrapping_shr(Self::BITS - other - 1)
     }
-
-    /// ================================================================================================================
-
-    /// Read a native endian integer value from its representation as a byte slice in little endian.
-    fn read(b: &[u8]) -> Self;
-
-    /// Save the integer as a byte array in little-endian byte order to memory.
-    fn save(&self, b: &mut [u8]);
-
-    /// Save the lower part integer as a byte array in little-endian byte order to memory.
-    fn save_lo(&self, b: &mut [u8]);
 }
 
 #[macro_export]
@@ -557,6 +555,12 @@ macro_rules! construct_eint_wrap {
                 self.0.trailing_zeros()
             }
 
+            fn get(mem: &[u8]) -> Self {
+                let mut buf = [0u8; Self::BITS as usize >> 3];
+                buf.copy_from_slice(&mem);
+                Self(<$uint>::from_le_bytes(buf))
+            }
+
             fn hi(self) -> Self {
                 self >> (Self::BITS >> 1)
             }
@@ -605,6 +609,20 @@ macro_rules! construct_eint_wrap {
             fn overflowing_sub_u(self, other: Self) -> (Self, bool) {
                 let (r, borrow) = self.0.overflowing_sub(other.0);
                 (Self(r), borrow)
+            }
+
+            fn put(&self, mem: &mut [u8]) {
+                let buf = self.0.to_le_bytes();
+                mem.copy_from_slice(&buf);
+            }
+
+            fn put_lo(&self, mem: &mut [u8]) {
+                let buf = self.0.to_le_bytes();
+                if Self::BITS == 8 {
+                    mem[0] = buf[0] & 0x0f
+                } else {
+                    mem.copy_from_slice(&buf[0..buf.len() >> 1]);
+                }
             }
 
             fn u8(self) -> u8 {
@@ -681,44 +699,6 @@ macro_rules! construct_eint_wrap {
 
             fn wrapping_sub(self, other: Self) -> Self {
                 Self(self.0.wrapping_sub(other.0))
-            }
-
-            fn read(b: &[u8]) -> Self {
-                let mut buf = [0u8; Self::BITS as usize >> 3];
-                buf.copy_from_slice(&b);
-                Self(<$uint>::from_le_bytes(buf))
-            }
-
-            fn save(&self, b: &mut [u8]) {
-                let buf = self.0.to_le_bytes();
-                b.copy_from_slice(&buf);
-            }
-
-            fn save_lo(&self, b: &mut [u8]) {
-                let buf = self.0.to_le_bytes();
-                b.copy_from_slice(&buf[0..buf.len() >> 1]);
-            }
-        }
-
-        impl $name {
-            /// Create a native endian integer value from its representation as a byte array in big endian.
-            pub fn from_be_bytes(bytes: [u8; Self::BITS as usize / 8]) -> Self {
-                Self(<$uint>::from_be_bytes(bytes))
-            }
-
-            /// Create a native endian integer value from its representation as a byte array in little endian.
-            pub fn from_le_bytes(bytes: [u8; Self::BITS as usize / 8]) -> Self {
-                Self(<$uint>::from_le_bytes(bytes))
-            }
-
-            /// Return the memory representation of this integer as a byte array in big-endian (network) byte order.
-            pub fn to_be_bytes(self) -> [u8; Self::BITS as usize / 8] {
-                self.0.to_be_bytes()
-            }
-
-            /// Return the memory representation of this integer as a byte array in little-endian byte order.
-            pub fn to_le_bytes(self) -> [u8; Self::BITS as usize / 8] {
-                self.0.to_le_bytes()
             }
         }
     };
@@ -979,9 +959,9 @@ macro_rules! construct_eint_twin {
             }
 
             fn cmp_s(&self, other: &Self) -> std::cmp::Ordering {
-                let lhssign = self.is_negative();
-                let rhssign = other.is_negative();
-                match (lhssign, rhssign) {
+                let l_sign = self.is_negative();
+                let r_sign = other.is_negative();
+                match (l_sign, r_sign) {
                     (false, false) => self.cmp(&other),
                     (false, true) => std::cmp::Ordering::Greater,
                     (true, false) => std::cmp::Ordering::Less,
@@ -1008,6 +988,13 @@ macro_rules! construct_eint_twin {
                 } else {
                     self.0.ctz()
                 }
+            }
+
+            fn get(mem: &[u8]) -> Self {
+                Self(
+                    <$half>::get(&mem[0..Self::BITS as usize >> 4]),
+                    <$half>::get(&mem[Self::BITS as usize >> 4..Self::BITS as usize >> 3]),
+                )
             }
 
             fn hi(self) -> Self {
@@ -1085,6 +1072,15 @@ macro_rules! construct_eint_twin {
                 let (hi, hi_borrow_1) = self.1.overflowing_sub_u(<$half>::from(lo_borrow));
                 let (hi, hi_borrow_2) = hi.overflowing_sub_u(other.1);
                 (Self(lo, hi), hi_borrow_1 || hi_borrow_2)
+            }
+
+            fn put(&self, mem: &mut [u8]) {
+                self.0.put(&mut mem[0..Self::BITS as usize >> 4]);
+                self.1.put(&mut mem[Self::BITS as usize >> 4..Self::BITS as usize >> 3]);
+            }
+
+            fn put_lo(&self, mem: &mut [u8]) {
+                self.0.put(mem);
             }
 
             fn u8(self) -> u8 {
@@ -1199,79 +1195,9 @@ macro_rules! construct_eint_twin {
                 let hi = self.1.wrapping_sub(other.1).wrapping_sub(<$half>::from(borrow));
                 Self(lo, hi)
             }
-
-            fn read(b: &[u8]) -> Self {
-                let mut buf = [0u8; Self::BITS as usize >> 3];
-                buf.copy_from_slice(&b);
-                Self(
-                    <$half>::read(&b[0..Self::BITS as usize >> 4]),
-                    <$half>::read(&b[Self::BITS as usize >> 4..Self::BITS as usize >> 3]),
-                )
-            }
-
-            fn save(&self, b: &mut [u8]) {
-                self.0.save(&mut b[0..Self::BITS as usize >> 4]);
-                self.1.save(&mut b[Self::BITS as usize >> 4..Self::BITS as usize >> 3]);
-            }
-
-            fn save_lo(&self, b: &mut [u8]) {
-                self.0.save(b);
-            }
         }
 
         impl $name {
-            /// Create a native endian integer value from its representation as a byte array in big endian.
-            pub fn from_be_bytes(bytes: [u8; Self::BITS as usize / 8]) -> Self {
-                let mut t = [0u8; Self::BITS as usize / 8 / 2];
-                let a = 0x00;
-                let b = Self::BITS as usize / 8 / 2;
-                let c = b;
-                let d = Self::BITS as usize / 8;
-                t.copy_from_slice(&bytes[a..b]);
-                let hi = <$half>::from_be_bytes(t);
-                t.copy_from_slice(&bytes[c..d]);
-                let lo = <$half>::from_be_bytes(t);
-                Self(lo, hi)
-            }
-
-            /// Create a native endian integer value from its representation as a byte array in little endian.
-            pub fn from_le_bytes(bytes: [u8; Self::BITS as usize / 8]) -> Self {
-                let mut t = [0u8; Self::BITS as usize / 8 / 2];
-                let a = 0x00;
-                let b = Self::BITS as usize / 8 / 2;
-                let c = b;
-                let d = Self::BITS as usize / 8;
-                t.copy_from_slice(&bytes[a..b]);
-                let lo = <$half>::from_le_bytes(t);
-                t.copy_from_slice(&bytes[c..d]);
-                let hi = <$half>::from_le_bytes(t);
-                Self(lo, hi)
-            }
-
-            /// Return the memory representation of this integer as a byte array in big-endian (network) byte order.
-            pub fn to_be_bytes(self) -> [u8; Self::BITS as usize / 8] {
-                let mut r = [0u8; Self::BITS as usize / 8];
-                let a = 0x00;
-                let b = Self::BITS as usize / 8 / 2;
-                let c = b;
-                let d = Self::BITS as usize / 8;
-                r[a..b].copy_from_slice(&self.1.to_be_bytes());
-                r[c..d].copy_from_slice(&self.0.to_be_bytes());
-                return r;
-            }
-
-            /// Return the memory representation of this integer as a byte array in little-endian byte order.
-            pub fn to_le_bytes(self) -> [u8; Self::BITS as usize / 8] {
-                let mut r = [0u8; Self::BITS as usize / 8];
-                let a = 0x00;
-                let b = Self::BITS as usize / 8 / 2;
-                let c = b;
-                let d = Self::BITS as usize / 8;
-                r[a..b].copy_from_slice(&self.0.to_le_bytes());
-                r[c..d].copy_from_slice(&self.1.to_le_bytes());
-                return r;
-            }
-
             /// div_half_0 returns the quotient and remainder of (hi, lo) divided by y: quo = (hi, lo)/y,
             /// rem = (hi, lo)%y with the dividend bits' upper half in parameter hi and the lower half in parameter lo.
             /// div_half_0 panics for y == 0 (division by zero) or y <= hi (quotient overflow).

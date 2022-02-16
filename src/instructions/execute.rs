@@ -4,9 +4,10 @@ use super::{
     utils::update_register,
     Instruction, Itype, R4type, Register, Rtype, Stype, Utype, VItype, VVtype, VXtype,
 };
+use crate::instructions::v_alu as alu;
 use crate::memory::Memory;
 use ckb_vm_definitions::{instructions as insts, registers::RA, VLEN};
-pub use eint::{alu, Eint, E1024, E128, E16, E2048, E256, E32, E512, E64, E8};
+pub use eint::{Eint, E1024, E128, E16, E2048, E256, E32, E512, E64, E8};
 
 macro_rules! ld {
     ($inst:expr, $machine:expr, $vl:expr, $stride:expr, $size:expr, $mask:expr) => {

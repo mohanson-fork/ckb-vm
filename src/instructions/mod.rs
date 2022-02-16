@@ -9,6 +9,7 @@ pub mod i;
 pub mod m;
 pub mod rvc;
 pub mod v;
+pub mod v_alu;
 pub mod v_register;
 
 pub use self::register::Register;

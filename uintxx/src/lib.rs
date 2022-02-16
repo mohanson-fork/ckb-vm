@@ -174,6 +174,18 @@ pub trait Eint:
         self.wrapping_shl(Self::BITS - other - 1).wrapping_sra(Self::BITS - other - 1)
     }
 
+    /// Returns the lower 8 bits.
+    fn u8(self) -> u8;
+
+    /// Returns the lower 16 bits.
+    fn u16(self) -> u16;
+
+    /// Returns the lower 32 bits.
+    fn u32(self) -> u32;
+
+    /// Returns the lower 64 bits.
+    fn u64(self) -> u64;
+
     /// Signed widening add.
     fn widening_add_s(self, other: Self) -> (Self, Self) {
         let hi_0 = if self.is_negative() { Self::MAX_U } else { Self::MIN_U };
@@ -305,18 +317,6 @@ pub trait Eint:
 
     /// The value is zero-extended to SEW bits.
     fn vi_u(i: u32) -> Self;
-
-    /// Returns the lower 8 bits.
-    fn u8(self) -> u8;
-
-    /// Returns the lower 16 bits.
-    fn u16(self) -> u16;
-
-    /// Returns the lower 32 bits.
-    fn u32(self) -> u32;
-
-    /// Returns the lower 64 bits.
-    fn u64(self) -> u64;
 
     /// Read a native endian integer value from its representation as a byte slice in little endian.
     fn read(b: &[u8]) -> Self;
@@ -623,6 +623,22 @@ macro_rules! construct_eint_wrap {
                 (Self(r), borrow)
             }
 
+            fn u8(self) -> u8 {
+                self.0 as u8
+            }
+
+            fn u16(self) -> u16 {
+                self.0 as u16
+            }
+
+            fn u32(self) -> u32 {
+                self.0 as u32
+            }
+
+            fn u64(self) -> u64 {
+                self.0 as u64
+            }
+
             fn wrapping_add(self, other: Self) -> Self {
                 Self(self.0.wrapping_add(other.0))
             }
@@ -704,22 +720,6 @@ macro_rules! construct_eint_wrap {
             fn vi_u(i: u32) -> Self {
                 assert!(i <= 31);
                 Self(i as $uint)
-            }
-
-            fn u8(self) -> u8 {
-                self.0 as u8
-            }
-
-            fn u16(self) -> u16 {
-                self.0 as u16
-            }
-
-            fn u32(self) -> u32 {
-                self.0 as u32
-            }
-
-            fn u64(self) -> u64 {
-                self.0 as u64
             }
 
             fn read(b: &[u8]) -> Self {
@@ -1126,6 +1126,22 @@ macro_rules! construct_eint_twin {
                 (Self(lo, hi), hi_borrow_1 || hi_borrow_2)
             }
 
+            fn u8(self) -> u8 {
+                self.0.u8()
+            }
+
+            fn u16(self) -> u16 {
+                self.0.u16()
+            }
+
+            fn u32(self) -> u32 {
+                self.0.u32()
+            }
+
+            fn u64(self) -> u64 {
+                self.0.u64()
+            }
+
             fn wrapping_add(self, other: Self) -> Self {
                 let (lo, carry) = self.0.overflowing_add_u(other.0);
                 let hi = self.1.wrapping_add(other.1).wrapping_add(<$half>::from(carry));
@@ -1240,22 +1256,6 @@ macro_rules! construct_eint_twin {
             fn vi_u(i: u32) -> Self {
                 assert!(i <= 31);
                 Self::from(i)
-            }
-
-            fn u8(self) -> u8 {
-                self.0.u8()
-            }
-
-            fn u16(self) -> u16 {
-                self.0.u16()
-            }
-
-            fn u32(self) -> u32 {
-                self.0.u32()
-            }
-
-            fn u64(self) -> u64 {
-                self.0.u64()
             }
 
             fn read(b: &[u8]) -> Self {

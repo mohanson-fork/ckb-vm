@@ -1,5 +1,5 @@
 use ckb_vm_definitions::VLEN;
-use eint::{Eint, E2048};
+use eint::{Eint, E128};
 
 /// Set if equal.
 pub fn seq<T: Eint>(lhs: T, rhs: T) -> bool {
@@ -279,21 +279,21 @@ pub fn vnclip<T: Eint>(lhs: T, rhs: T) -> T {
 }
 
 // Count population in mask.
-pub fn cpop(vs2: E2048, m: E2048, vl: u64) -> u64 {
+pub fn cpop(vs2: E128, m: E128, vl: u64) -> u64 {
     if vl == 0 {
         0
     } else {
-        (vs2 & m & (E2048::MAX_U >> (VLEN as u32 - vl as u32))).cpop() as u64
+        (vs2 & m & (E128::MAX_U >> (VLEN as u32 - vl as u32))).cpop() as u64
     }
 }
 
 // Find first set mask bit.
-pub fn first(vs2: E2048, m: E2048, vl: u64) -> u64 {
+pub fn first(vs2: E128, m: E128, vl: u64) -> u64 {
     if vl == 0 {
         return u64::MAX;
     }
-    let r = (vs2 & m & (E2048::MAX_U >> (VLEN as u32 - vl as u32))).ctz();
-    if r == 2048 {
+    let r = (vs2 & m & (E128::MAX_U >> (VLEN as u32 - vl as u32))).ctz();
+    if r == 128 {
         u64::MAX
     } else {
         r as u64
@@ -301,7 +301,7 @@ pub fn first(vs2: E2048, m: E2048, vl: u64) -> u64 {
 }
 
 // Set before first mask bit.
-pub fn sbf(vs2: E2048, vd: E2048, m: E2048, vl: u64) -> E2048 {
+pub fn sbf(vs2: E128, vd: E128, m: E128, vl: u64) -> E128 {
     let mut found_first_mask = false;
     let mut r = vd;
     for j in 0..vl as u32 {
@@ -321,7 +321,7 @@ pub fn sbf(vs2: E2048, vd: E2048, m: E2048, vl: u64) -> E2048 {
 }
 
 // Set including first mask bit.
-pub fn sif(vs2: E2048, vd: E2048, m: E2048, vl: u64) -> E2048 {
+pub fn sif(vs2: E128, vd: E128, m: E128, vl: u64) -> E128 {
     let mut found_first_mask = false;
     let mut r = vd;
     for j in 0..vl as u32 {
@@ -343,7 +343,7 @@ pub fn sif(vs2: E2048, vd: E2048, m: E2048, vl: u64) -> E2048 {
 }
 
 // Set only first mask bit.
-pub fn sof(vs2: E2048, vd: E2048, m: E2048, vl: u64) -> E2048 {
+pub fn sof(vs2: E128, vd: E128, m: E128, vl: u64) -> E128 {
     let mut found_first_mask = false;
     let mut r = vd;
     for j in 0..vl as u32 {

@@ -4328,15 +4328,15 @@ macro_rules! vcheck_x_m_loop {
 macro_rules! handle_x_m_loop {
     ($inst:expr, $machine:expr, $body:expr) => {
         let i = VVtype($inst);
-        let vs2 = E2048::get(
+        let vs2 = E128::get(
             $machine
                 .coprocessor_v()
                 .element_ref(i.vs2(), VLEN as u64, 0),
         );
         let m = if i.vm() == 0 {
-            E2048::get($machine.coprocessor_v().element_ref(0, VLEN as u64, 0))
+            E128::get($machine.coprocessor_v().element_ref(0, VLEN as u64, 0))
         } else {
-            E2048::MAX_U
+            E128::MAX_U
         };
         let vl = $machine.coprocessor_v().vl();
         let r = $body(vs2, m, vl);
@@ -4356,16 +4356,16 @@ macro_rules! vcheck_m_m_loop {
 macro_rules! handle_m_m_loop {
     ($inst:expr, $machine:expr, $body:expr) => {
         let i = VVtype($inst);
-        let vs2 = E2048::get(
+        let vs2 = E128::get(
             $machine
                 .coprocessor_v()
                 .element_ref(i.vs2(), VLEN as u64, 0),
         );
-        let vd = E2048::get($machine.coprocessor_v().element_ref(i.vd(), VLEN as u64, 0));
+        let vd = E128::get($machine.coprocessor_v().element_ref(i.vd(), VLEN as u64, 0));
         let m = if i.vm() == 0 {
-            E2048::get($machine.coprocessor_v().element_ref(0, VLEN as u64, 0))
+            E128::get($machine.coprocessor_v().element_ref(0, VLEN as u64, 0))
         } else {
-            E2048::MAX_U
+            E128::MAX_U
         };
         let vl = $machine.coprocessor_v().vl();
         let r = $body(vs2, vd, m, vl);

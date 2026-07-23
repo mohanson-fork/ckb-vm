@@ -16,6 +16,10 @@ pub enum Error {
     ElfSegmentWritableAndExecutable(u64),
     #[display("elf error: segment addr or size is wrong vaddr=0x{_0:x}")]
     ElfSegmentAddrOrSizeError(u64),
+    #[display("elf error: too many loading actions count={_0}")]
+    ElfTooManyLoadingActions(u64),
+    #[display("elf error: too many memory loadings")]
+    ElfTooManyMemoryLoadings,
     // When users need to implement traits defined in CKB-VM, they can use
     // this error type to wrap their own errors.
     #[display("external error: {_0}")]

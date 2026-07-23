@@ -9,6 +9,7 @@ use std::sync::atomic::{AtomicU8, Ordering};
 
 use bytes::Bytes;
 
+use super::ckb_vm_definitions::BINARY_PT_LOAD_LIMITS;
 use super::debugger::Debugger;
 use super::decoder::{DefaultDecoder, InstDecoder};
 use super::elf::{LoadingAction, ProgramMetadata, parse_elf};
@@ -141,7 +142,13 @@ pub trait SupportMachine: CoreMachine {
         update_pc: bool,
     ) -> Result<u64, Error> {
         let version = self.version();
-        let mut bytes: u64 = 0;
+        if version >= VERSION3 && metadata.actions.len() > BINARY_PT_LOAD_LIMITS {
+            return Err(Error::ElfTooManyLoadingActions(
+                metadata.actions.len() as u64
+            ));
+        }
+        let mut total_filesz: u64 = 0;
+        let mut total_memsz: u64 = 0;
         for action in &metadata.actions {
             let LoadingAction {
                 addr,
@@ -161,17 +168,23 @@ pub trait SupportMachine: CoreMachine {
             if version < VERSION1 {
                 self.memory_mut().store_byte(*addr, *offset_from_addr, 0)?;
             }
-            bytes = bytes
+            total_filesz = total_filesz
                 .checked_add(source.end - source.start)
                 .ok_or_else(|| {
                     Error::Unexpected(String::from("The bytes count overflowed on loading elf"))
                 })?;
+            total_memsz = total_memsz.checked_add(*size).ok_or_else(|| {
+                Error::Unexpected(String::from("The bytes count overflowed on loading elf"))
+            })?;
+            if version >= VERSION3 && total_memsz > self.memory().memory_size() as u64 {
+                return Err(Error::ElfTooManyMemoryLoadings);
+            }
         }
         if update_pc {
             self.update_pc(Self::REG::from_u64(metadata.entry));
             self.commit_pc();
         }
-        Ok(bytes)
+        Ok(total_filesz)
     }
 
     fn load_binary(

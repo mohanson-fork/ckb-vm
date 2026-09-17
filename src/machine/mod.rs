@@ -11,7 +11,7 @@ use bytes::Bytes;
 
 use super::debugger::Debugger;
 use super::decoder::{DefaultDecoder, InstDecoder};
-use super::elf::{LoadingAction, ProgramMetadata, parse_elf};
+use super::elf::{LoadingAction, ProgramMetadata, metadata_strict_check, parse_elf};
 use super::instructions::{Instruction, Register, execute};
 use super::memory::{Memory, load_c_string_byte_by_byte};
 use super::syscalls::Syscalls;
@@ -589,10 +589,17 @@ impl<Inner: SupportMachine, Decoder> SupportMachine for DefaultMachine<Inner, De
         metadata: &ProgramMetadata,
         update_pc: bool,
     ) -> Result<u64, Error> {
+        if self.version() >= VERSION3 || self.validation_mode() == ValidationMode::Strict {
+            metadata_strict_check(metadata)?;
+        }
         self.inner.load_binary(program, metadata, update_pc)
     }
 
     fn load_elf(&mut self, program: &Bytes, update_pc: bool) -> Result<u64, Error> {
+        let metadata = parse_elf::<Self::REG>(program, self.version())?;
+        if self.version() >= VERSION3 || self.validation_mode() == ValidationMode::Strict {
+            metadata_strict_check(&metadata)?;
+        }
         self.inner.load_elf(program, update_pc)
     }
 

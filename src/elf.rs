@@ -2,7 +2,7 @@
 // same internal structure.
 use crate::machine::VERSION1;
 use crate::memory::{FLAG_EXECUTABLE, FLAG_FREEZED, round_page_down, round_page_up};
-use crate::{Error, Register};
+use crate::{BINARY_MAX_MEMORY_LOADING, BINARY_MAX_PT_LOAD_COUNTS, Error, Register};
 use bytes::Bytes;
 use scroll::Pread;
 use std::ops::Range;
@@ -207,4 +207,21 @@ pub fn parse_elf<R: Register>(program: &Bytes, version: u32) -> Result<ProgramMe
         }
     }
     Ok(ProgramMetadata { actions, entry })
+}
+
+pub fn metadata_strict_check(metadata: &ProgramMetadata) -> Result<(), Error> {
+    if metadata.actions.len() > BINARY_MAX_PT_LOAD_COUNTS {
+        return Err(Error::ElfTooManyLoadingActions(
+            metadata.actions.len() as u64
+        ));
+    }
+    let mem_sz = metadata
+        .actions
+        .iter()
+        .map(|e| e.size)
+        .fold(0, |acc: u64, x| acc.saturating_add(x));
+    if mem_sz > BINARY_MAX_MEMORY_LOADING {
+        return Err(Error::ElfTooManyMemoryWrites(mem_sz));
+    }
+    Ok(())
 }

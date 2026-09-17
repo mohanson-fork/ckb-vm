@@ -12,6 +12,9 @@ pub const MEMORY_FRAME_PAGE_SHIFTS: usize = MEMORY_FRAME_SHIFTS - RISCV_PAGE_SHI
 
 pub const DEFAULT_MEMORY_SIZE: usize = 4 << 20; // 4 MB
 
+pub const BINARY_MAX_PT_LOAD_COUNTS: usize = 32;
+pub const BINARY_MAX_MEMORY_LOADING: u64 = 32 << 20; // 32 MB
+
 pub const ISA_IMC: u8 = 0b0000_0000;
 pub const ISA_B: u8 = 0b0000_0001;
 pub const ISA_MOP: u8 = 0b0000_0010;
